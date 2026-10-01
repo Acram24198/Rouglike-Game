@@ -1,1 +1,71 @@
-<h1>Works</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Lakeland RPG</title>
+
+    <link rel="stylesheet"
+          href="https://pyscript.net/releases/2025.8.1/core.css">
+
+    <script type="module"
+            src="https://pyscript.net/releases/2025.8.1/core.js">
+    </script>
+
+    <style>
+        body {
+            background: #0d0d0d;
+            color: #eeeeee;
+            font-family: monospace;
+            max-width: 750px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        #game {
+            border: 2px solid #555;
+            padding: 25px;
+            min-height: 350px;
+            white-space: pre-line;
+        }
+
+        button {
+            font-family: monospace;
+            font-size: 18px;
+            padding: 12px 20px;
+            margin: 8px;
+            cursor: pointer;
+        }
+
+        input {
+            font-family: monospace;
+            font-size: 18px;
+            padding: 10px;
+        }
+
+        #controls {
+            margin-top: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>LAKELAND RPG</h1>
+
+<div id="game">
+Loading Python...
+</div>
+
+<div id="controls"></div>
+
+<script type="py" src="./game.py"></script>
+
+</body>
+</html>
