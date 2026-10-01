@@ -23,11 +23,11 @@ heal_rate = 20
 # ==========================================
 
 enemies = [
-    ["Goblin", 75, 15],
-    ["Skeleton", 100, 18],
-    ["Orc", 125, 22],
-    ["Dark Knight", 175, 28],
-    ["Dragon", 250, 35]
+    ["Goblin", 75, 5],
+    ["Skeleton", 100, 12],
+    ["Orc", 125, 18],
+    ["Dark Knight", 175, 25],
+    ["Dragon", 250, 30]
 ]
 
 enemy_number = 0
