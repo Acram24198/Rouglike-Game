@@ -13,6 +13,7 @@ health = max_health
 
 max_mana = 50
 mana = max_mana
+mana_regen = 3
 
 max_damage = 15
 heal_rate = 20
@@ -48,7 +49,19 @@ def display(text):
 def controls(html):
     document.querySelector("#controls").innerHTML = html
 
+# ==========================================
+# MANA REGEN
+# ==========================================
 
+def regenerate_mana():
+
+    global mana
+
+    mana += mana_regen
+
+    if mana > max_mana:
+        mana = max_mana
+        
 # ==========================================
 # START SCREEN
 # ==========================================
@@ -182,7 +195,9 @@ def attack(event=None):
         game_over()
 
         return
-
+        
+    regenerate_mana()
+    
     show_combat(message)
 
 
@@ -229,7 +244,9 @@ def heal(event=None):
         game_over()
 
         return
-
+        
+    regenerate_mana()
+    
     show_combat(message)
 
 
