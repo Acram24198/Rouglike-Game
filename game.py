@@ -49,6 +49,7 @@ def display(text):
 def controls(html):
     document.querySelector("#controls").innerHTML = html
 
+
 # ==========================================
 # MANA REGEN
 # ==========================================
@@ -61,7 +62,8 @@ def regenerate_mana():
 
     if mana > max_mana:
         mana = max_mana
-        
+
+
 # ==========================================
 # START SCREEN
 # ==========================================
@@ -130,18 +132,19 @@ def show_combat(message=""):
        {name}
 ========================
 
-HP:        {max(health, 0)}/{max_health}
-Mana:      {mana}/{max_mana}
-Damage:    1-{max_damage}
-Heal Rate: 1-{heal_rate}
+HP:         {max(health, 0)}/{max_health}
+Mana:       {mana}/{max_mana}
+Mana Regen: {mana_regen}/turn
+Damage:     1-{max_damage}
+Heal Rate:  1-{heal_rate}
 
 
 ========================
        {enemy_name}
 ========================
 
-HP:        {max(enemy_hp, 0)}
-Damage:    1-{enemy_max_dmg}
+HP:         {max(enemy_hp, 0)}
+Damage:     1-{enemy_max_dmg}
 
 
 {message}
@@ -195,9 +198,10 @@ def attack(event=None):
         game_over()
 
         return
-        
+
+    # Regenerate mana after the turn
     regenerate_mana()
-    
+
     show_combat(message)
 
 
@@ -218,8 +222,10 @@ def heal(event=None):
 
         return
 
+    # Spend mana
     mana -= 10
 
+    # Heal
     healing = randint(1, heal_rate)
 
     health += healing
@@ -244,9 +250,10 @@ def heal(event=None):
         game_over()
 
         return
-        
+
+    # Regenerate mana after the turn
     regenerate_mana()
-    
+
     show_combat(message)
 
 
@@ -303,6 +310,7 @@ def upgrade_mana(event=None):
 
     max_mana = round(max_mana * 1.25)
 
+    # Refill mana
     mana = max_mana
 
     next_enemy()
@@ -319,6 +327,7 @@ def upgrade_damage(event=None):
 
     max_damage = round(max_damage * 1.15)
 
+    # Refill mana
     mana = max_mana
 
     next_enemy()
@@ -335,6 +344,7 @@ def upgrade_heal(event=None):
 
     heal_rate = round(heal_rate * 1.25)
 
+    # Refill mana
     mana = max_mana
 
     next_enemy()
@@ -377,6 +387,7 @@ FINAL STATS
 
 Max HP:      {max_health}
 Max Mana:    {max_mana}
+Mana Regen:  {mana_regen}/turn
 Max Damage:  {max_damage}
 Heal Rate:   {heal_rate}
 """)
@@ -406,6 +417,7 @@ FINAL BUILD
 
 Max HP:      {max_health}
 Max Mana:    {max_mana}
+Mana Regen:  {mana_regen}/turn
 Max Damage:  {max_damage}
 Heal Rate:   {heal_rate}
 """)
@@ -428,21 +440,25 @@ def restart_game(event=None):
 
     global max_mana
     global mana
+    global mana_regen
 
     global max_damage
     global heal_rate
 
     global enemy_number
 
+    # Reset player
     max_health = 100
     health = max_health
 
     max_mana = 50
     mana = max_mana
+    mana_regen = 3
 
     max_damage = 15
     heal_rate = 20
 
+    # Reset enemies
     enemy_number = 0
 
     show_start()
