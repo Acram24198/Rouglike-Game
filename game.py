@@ -57,7 +57,7 @@ def show_start():
 
     display("""
 ========================
-      LAKELAND RPG
+       Roguelike
 ========================
 
 Enter your name to begin.
