@@ -28,7 +28,9 @@ enemies = [
     ["Skeleton", 100, 12],
     ["Orc", 125, 18],
     ["Dark Knight", 175, 25],
-    ["Dragon", 250, 30]
+    ["Dragon", 250, 30],
+    ["Robotic Orc", 350, 45],
+    ["Jordan Yoder", 450, 60]
 ]
 
 enemy_number = 0
