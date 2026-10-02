@@ -57,7 +57,7 @@
             cursor: pointer;
         }
 
-        input {
+        input, select {
             font-family: monospace;
             font-size: 18px;
             padding: 10px;
@@ -67,10 +67,205 @@
             margin-top: 20px;
             text-align: center;
         }
+
+        /* DEV BUTTON */
+
+        #dev-button {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+
+            font-size: 13px;
+            padding: 7px 10px;
+            margin: 0;
+
+            background: #181818;
+            color: #888;
+            border: 1px solid #444;
+        }
+
+        #dev-button:hover {
+            color: #ffffff;
+            border-color: #888;
+        }
+
+        /* DEV LOGIN */
+
+        #dev-login {
+            display: none;
+
+            position: fixed;
+            top: 50px;
+            right: 10px;
+            z-index: 1000;
+
+            background: #151515;
+            border: 2px solid #555;
+            padding: 15px;
+            width: 280px;
+        }
+
+        #dev-login input {
+            box-sizing: border-box;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+
+        #dev-login button {
+            font-size: 14px;
+            padding: 8px;
+            margin: 3px;
+        }
+
+        /* DEV PANEL */
+
+        #dev-panel {
+            display: none;
+
+            position: fixed;
+            top: 50px;
+            right: 10px;
+            z-index: 1000;
+
+            width: 300px;
+            max-height: 85vh;
+            overflow-y: auto;
+
+            background: #151515;
+            border: 2px solid #ff5555;
+            padding: 15px;
+        }
+
+        #dev-panel h2 {
+            color: #ff5555;
+            margin-top: 0;
+            text-align: center;
+        }
+
+        .dev-row {
+            margin-bottom: 10px;
+        }
+
+        .dev-row label {
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .dev-row input,
+        .dev-row select {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        #dev-panel button {
+            font-size: 14px;
+            padding: 8px 10px;
+            margin: 4px;
+        }
+
+        #dev-status {
+            color: #ff7777;
+            text-align: center;
+            margin-top: 8px;
+        }
     </style>
 </head>
 
 <body>
+
+<button id="dev-button" py-click="open_dev_login">
+    DEV
+</button>
+
+<div id="dev-login">
+
+    <strong>Developer Access</strong>
+
+    <br><br>
+
+    <input
+        id="dev-password"
+        type="password"
+        placeholder="Password">
+
+    <div style="text-align:center;">
+        <button py-click="check_dev_password">
+            LOGIN
+        </button>
+
+        <button py-click="close_dev_login">
+            CANCEL
+        </button>
+    </div>
+
+    <div id="dev-status"></div>
+
+</div>
+
+
+<div id="dev-panel">
+
+    <h2>DEV MODE</h2>
+
+    <div class="dev-row">
+        <label>Health</label>
+        <input id="dev-health" type="number">
+    </div>
+
+    <div class="dev-row">
+        <label>Max Health</label>
+        <input id="dev-max-health" type="number">
+    </div>
+
+    <div class="dev-row">
+        <label>Mana</label>
+        <input id="dev-mana" type="number">
+    </div>
+
+    <div class="dev-row">
+        <label>Max Mana</label>
+        <input id="dev-max-mana" type="number">
+    </div>
+
+    <div class="dev-row">
+        <label>Max Damage</label>
+        <input id="dev-damage" type="number">
+    </div>
+
+    <div class="dev-row">
+        <label>Mana Regen</label>
+        <input id="dev-regen" type="number">
+    </div>
+
+    <div class="dev-row">
+        <label>Heal Rate</label>
+        <input id="dev-heal" type="number">
+    </div>
+
+    <div class="dev-row">
+        <label>Enemy</label>
+        <select id="dev-enemy"></select>
+    </div>
+
+    <div style="text-align:center;">
+
+        <button py-click="apply_dev_changes">
+            APPLY
+        </button>
+
+        <button py-click="dev_load_enemy">
+            LOAD ENEMY
+        </button>
+
+        <button py-click="close_dev_panel">
+            CLOSE
+        </button>
+
+    </div>
+
+</div>
+
 
 <h1>Roguelike by A.R.</h1>
 
@@ -79,7 +274,7 @@
     This website is an independent project and is not affiliated with,
     endorsed by, or an official website of Lakeland.
     <br><br>
-    This website has just moved to its new permanent domain and can 
+    This website has just moved to its new permanent domain and can
     experience issues as I bug fix and make sure everything works.
 </div>
 
