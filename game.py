@@ -6,7 +6,7 @@ from pyscript import document
 # DEV MODE
 # ==========================================
 
-DEV_PASSWORD = "CHANGE_THIS_PASSWORD"
+DEV_PASSWORD = "7355608"
 
 dev_mode = False
 
