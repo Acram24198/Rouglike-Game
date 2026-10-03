@@ -57,7 +57,9 @@ enemies = [
     ["Dragon", 250, 25],
     ["Robotic Orc", 350, 35],
     ["Jordan Yoder", 450, 50],
-    ["Riley Gould", 150, 100]
+    ["Riley Gould", 150, 100],
+    ["Evil Jordan", 300, 125],
+    ["Alex Resor", 450, 100]
 ]
 
 enemy_number = 0
