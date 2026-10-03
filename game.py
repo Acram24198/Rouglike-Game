@@ -1,5 +1,6 @@
 from random import randint
 from pyscript import document
+from pyscript.ffi import to_js
 from js import fetch, localStorage, JSON
 import asyncio
 
@@ -22,8 +23,8 @@ DEV_PASSWORD = "7355608"
 
 dev_mode = False
 
-# Once DEV has been activated during a run,
-# that entire run is permanently disqualified.
+# Once DEV mode is activated during a run,
+# that run cannot submit leaderboard stats.
 run_disqualified = False
 
 
@@ -71,16 +72,27 @@ enemy_max_dmg = 0
 # ==========================================
 
 def display(text):
-    document.querySelector("#game").innerText = text
+
+    document.querySelector(
+        "#game"
+    ).innerText = text
 
 
 def controls(html):
-    document.querySelector("#controls").innerHTML = html
+
+    document.querySelector(
+        "#controls"
+    ).innerHTML = html
 
 
-def login_message(text="", error=False):
+def login_message(
+    text="",
+    error=False
+):
 
-    element = document.querySelector("#login-message")
+    element = document.querySelector(
+        "#login-message"
+    )
 
     element.innerText = text
 
@@ -91,7 +103,7 @@ def login_message(text="", error=False):
 
 
 # ==========================================
-# API HELPERS
+# API REQUEST
 # ==========================================
 
 async def api_request(
@@ -102,13 +114,15 @@ async def api_request(
 ):
 
     headers = {
-        "Content-Type": "application/json"
+        "Content-Type":
+            "application/json"
     }
 
     if use_auth and auth_token:
-        headers["Authorization"] = (
-            f"Bearer {auth_token}"
-        )
+
+        headers[
+            "Authorization"
+        ] = f"Bearer {auth_token}"
 
     options = {
         "method": method,
@@ -116,18 +130,24 @@ async def api_request(
     }
 
     if body is not None:
-        options["body"] = JSON.stringify(body)
+
+        options["body"] = JSON.stringify(
+            to_js(body)
+        )
 
     try:
 
         response = await fetch(
             API_URL + path,
-            options
+            to_js(options)
         )
 
         data = await response.json()
 
-        return response.status, data
+        return (
+            response.status,
+            data
+        )
 
     except Exception as error:
 
@@ -157,7 +177,9 @@ async def register(event=None):
         "#account-password"
     ).value
 
-    login_message("Creating account...")
+    login_message(
+        "Creating account..."
+    )
 
     status, data = await api_request(
         "/register",
@@ -177,23 +199,38 @@ async def register(event=None):
 
         return
 
-    if status not in (200, 201):
+    if status not in (
+        200,
+        201
+    ):
+
+        error_message = getattr(
+            data,
+            "error",
+            "Registration failed."
+        )
 
         login_message(
-            data.error or "Registration failed.",
+            error_message,
             True
         )
 
         return
 
     auth_token = data.token
+
     logged_in = True
+
     name = data.user.username
 
     localStorage.setItem(
         "roguelike_token",
         auth_token
     )
+
+    document.querySelector(
+        "#account-password"
+    ).value = ""
 
     login_message("")
 
@@ -224,7 +261,9 @@ async def login(event=None):
         "#account-password"
     ).value
 
-    login_message("Logging in...")
+    login_message(
+        "Logging in..."
+    )
 
     status, data = await api_request(
         "/login",
@@ -246,21 +285,33 @@ async def login(event=None):
 
     if status != 200:
 
+        error_message = getattr(
+            data,
+            "error",
+            "Login failed."
+        )
+
         login_message(
-            data.error or "Login failed.",
+            error_message,
             True
         )
 
         return
 
     auth_token = data.token
+
     logged_in = True
+
     name = data.user.username
 
     localStorage.setItem(
         "roguelike_token",
         auth_token
     )
+
+    document.querySelector(
+        "#account-password"
+    ).value = ""
 
     login_message("")
 
@@ -292,7 +343,9 @@ async def logout(event=None):
         )
 
     auth_token = None
+
     logged_in = False
+
     name = ""
 
     localStorage.removeItem(
@@ -338,7 +391,30 @@ def show_logged_in():
 
     document.querySelector(
         "#account-status"
-    ).innerText = f"Logged in as: {name}"
+    ).innerText = (
+        f"Logged in as: {name}"
+    )
+
+
+def show_logged_out():
+
+    document.querySelector(
+        "#account-bar"
+    ).style.display = "none"
+
+    document.querySelector(
+        "#login-area"
+    ).style.display = "block"
+
+    display("""
+========================
+       ROGUELIKE
+========================
+
+Log in or create an account to play.
+""")
+
+    controls("")
 
 
 # ==========================================
@@ -372,11 +448,12 @@ async def restore_session():
 
     if (
         status == 200
-        and data
+        and data is not None
         and data.logged_in
     ):
 
         logged_in = True
+
         name = data.user.username
 
         show_logged_in()
@@ -388,7 +465,10 @@ async def restore_session():
     else:
 
         auth_token = None
+
         logged_in = False
+
+        name = ""
 
         localStorage.removeItem(
             "roguelike_token"
@@ -397,27 +477,6 @@ async def restore_session():
         show_logged_out()
 
     await load_leaderboards()
-
-
-def show_logged_out():
-
-    document.querySelector(
-        "#account-bar"
-    ).style.display = "none"
-
-    document.querySelector(
-        "#login-area"
-    ).style.display = "block"
-
-    display("""
-========================
-       ROGUELIKE
-========================
-
-Log in or create an account to play.
-""")
-
-    controls("")
 
 
 # ==========================================
@@ -430,19 +489,28 @@ async def load_leaderboards():
         "/leaderboards"
     )
 
-    if status != 200 or data is None:
+    if (
+        status != 200
+        or data is None
+    ):
 
         document.querySelector(
             "#wins-leaderboard"
-        ).innerText = "Unable to load."
+        ).innerText = (
+            "Unable to load."
+        )
 
         document.querySelector(
             "#furthest-leaderboard"
-        ).innerText = "Unable to load."
+        ).innerText = (
+            "Unable to load."
+        )
 
         return
 
-    # Wins
+    # ------------------------------
+    # WINS
+    # ------------------------------
 
     wins_html = ""
 
@@ -470,7 +538,9 @@ async def load_leaderboards():
         "#wins-leaderboard"
     ).innerHTML = wins_html
 
-    # Furthest run
+    # ------------------------------
+    # FURTHEST RUN
+    # ------------------------------
 
     furthest_html = ""
 
@@ -482,7 +552,8 @@ async def load_leaderboards():
             '<div class="leaderboard-row">'
             f'<span>{index + 1}. '
             f'{player.username}</span>'
-            f'<span>{player.furthest_enemy}</span>'
+            f'<span>Round '
+            f'{player.furthest_enemy}</span>'
             '</div>'
         )
 
@@ -505,18 +576,17 @@ async def load_leaderboards():
 
 async def submit_progress():
 
-    if (
-        not logged_in
-        or run_disqualified
-    ):
+    if not logged_in:
         return
 
-    # Human-readable round numbers:
-    # enemy_number 0 = Round 1
+    if run_disqualified:
+        return
 
-    round_number = enemy_number + 1
+    round_number = (
+        enemy_number + 1
+    )
 
-    await api_request(
+    status, data = await api_request(
         "/progress",
         "POST",
         {
@@ -526,7 +596,9 @@ async def submit_progress():
         use_auth=True
     )
 
-    await load_leaderboards()
+    if status == 200:
+
+        await load_leaderboards()
 
 
 # ==========================================
@@ -535,29 +607,33 @@ async def submit_progress():
 
 async def submit_win():
 
-    if (
-        not logged_in
-        or run_disqualified
-    ):
+    if not logged_in:
         return
 
-    await api_request(
+    if run_disqualified:
+        return
+
+    status, data = await api_request(
         "/win",
         "POST",
         use_auth=True
     )
 
-    await load_leaderboards()
+    if status == 200:
+
+        await load_leaderboards()
 
 
 # ==========================================
-# DEV MODE FUNCTIONS
+# DEV MODE
 # ==========================================
 
 def open_dev_login(event=None):
 
     if dev_mode:
+
         open_dev_panel()
+
         return
 
     document.querySelector(
@@ -589,15 +665,16 @@ def check_dev_password(event=None):
     global dev_mode
     global run_disqualified
 
-    entered_password = document.querySelector(
-        "#dev-password"
-    ).value
+    entered_password = (
+        document.querySelector(
+            "#dev-password"
+        ).value
+    )
 
     if entered_password == DEV_PASSWORD:
 
         dev_mode = True
 
-        # Permanent for current run
         run_disqualified = True
 
         document.querySelector(
@@ -610,7 +687,9 @@ def check_dev_password(event=None):
 
         document.querySelector(
             "#dev-button"
-        ).innerText = "DEV ACTIVE"
+        ).innerText = (
+            "DEV ACTIVE"
+        )
 
         open_dev_panel()
 
@@ -618,7 +697,9 @@ def check_dev_password(event=None):
 
         document.querySelector(
             "#dev-status"
-        ).innerText = "Incorrect password."
+        ).innerText = (
+            "Incorrect password."
+        )
 
 
 def open_dev_panel(event=None):
@@ -654,13 +735,17 @@ def open_dev_panel(event=None):
         "#dev-heal"
     ).value = str(heal_rate)
 
-    enemy_select = document.querySelector(
-        "#dev-enemy"
+    enemy_select = (
+        document.querySelector(
+            "#dev-enemy"
+        )
     )
 
     options = ""
 
-    for i, enemy in enumerate(enemies):
+    for i, enemy in enumerate(
+        enemies
+    ):
 
         selected = ""
 
@@ -668,12 +753,15 @@ def open_dev_panel(event=None):
             selected = "selected"
 
         options += (
-            f'<option value="{i}" {selected}>'
+            f'<option value="{i}" '
+            f'{selected}>'
             f'{enemy[0]}'
             f'</option>'
         )
 
-    enemy_select.innerHTML = options
+    enemy_select.innerHTML = (
+        options
+    )
 
     document.querySelector(
         "#dev-panel"
@@ -703,6 +791,7 @@ def get_dev_number(
         return value
 
     except:
+
         return fallback
 
 
@@ -801,7 +890,8 @@ def apply_dev_changes(event=None):
 
         show_combat(
             "Developer stats applied.\n"
-            "Leaderboard disabled for this run."
+            "Leaderboard disabled "
+            "for this run."
         )
 
 
@@ -821,6 +911,7 @@ def dev_load_enemy(event=None):
         )
 
     except:
+
         return
 
     apply_dev_changes()
@@ -841,6 +932,7 @@ def regenerate_mana():
     mana += mana_regen
 
     if mana > max_mana:
+
         mana = max_mana
 
 
@@ -932,6 +1024,7 @@ def reset_run():
     enemy_max_dmg = 0
 
     dev_mode = False
+
     run_disqualified = False
 
     document.querySelector(
@@ -962,16 +1055,22 @@ def start_enemy():
     ]
 
     enemy_name = enemy[0]
+
     enemy_hp = enemy[1]
+
     enemy_max_dmg = enemy[2]
 
-    # Record legitimate progress
+    # Save the round automatically.
+    # DEV runs are rejected by
+    # submit_progress().
+
     asyncio.create_task(
         submit_progress()
     )
 
     show_combat(
-        f"You encounter a {enemy_name}!"
+        f"You encounter a "
+        f"{enemy_name}!"
     )
 
 
@@ -986,7 +1085,8 @@ def show_combat(message=""):
     if run_disqualified:
 
         dev_text = (
-            "\n\n[DEV RUN - "
+            "\n\n"
+            "[DEV RUN - "
             "LEADERBOARD DISABLED]"
         )
 
@@ -1042,14 +1142,16 @@ def attack(event=None):
     enemy_hp -= damage
 
     message = (
-        f"You attack the {enemy_name}!\n"
+        f"You attack the "
+        f"{enemy_name}!\n"
         f"You deal {damage} damage!"
     )
 
     if enemy_hp <= 0:
 
         show_upgrade(
-            f"You defeated the {enemy_name}!"
+            f"You defeated the "
+            f"{enemy_name}!"
         )
 
         return
@@ -1062,8 +1164,9 @@ def attack(event=None):
     health -= enemy_damage
 
     message += (
-        f"\n\nThe {enemy_name} attacks you "
-        f"for {enemy_damage} damage!"
+        f"\n\nThe {enemy_name} "
+        f"attacks you for "
+        f"{enemy_damage} damage!"
     )
 
     if health <= 0:
@@ -1089,7 +1192,8 @@ def heal(event=None):
     if mana < 10:
 
         show_combat(
-            "You don't have enough mana!"
+            "You don't have "
+            "enough mana!"
         )
 
         return
@@ -1104,6 +1208,7 @@ def heal(event=None):
     health += healing
 
     if health > max_health:
+
         health = max_health
 
     message = (
@@ -1118,8 +1223,9 @@ def heal(event=None):
     health -= enemy_damage
 
     message += (
-        f"\n\nThe {enemy_name} attacks you "
-        f"for {enemy_damage} damage!"
+        f"\n\nThe {enemy_name} "
+        f"attacks you for "
+        f"{enemy_damage} damage!"
     )
 
     if health <= 0:
@@ -1247,7 +1353,9 @@ def next_enemy():
 
     enemy_number += 1
 
-    if enemy_number >= len(enemies):
+    if enemy_number >= len(
+        enemies
+    ):
 
         win_game()
 
@@ -1262,8 +1370,6 @@ def next_enemy():
 
 def game_over():
 
-    leaderboard_text = ""
-
     if run_disqualified:
 
         leaderboard_text = (
@@ -1274,7 +1380,8 @@ def game_over():
     else:
 
         leaderboard_text = (
-            "\nYour furthest round has been saved."
+            "\nYour furthest round "
+            "has been saved."
         )
 
     display(f"""
