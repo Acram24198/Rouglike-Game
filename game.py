@@ -1,5 +1,17 @@
 from random import randint
 from pyscript import document
+from js import fetch, localStorage, JSON
+import asyncio
+
+
+# ==========================================
+# API
+# ==========================================
+
+API_URL = "https://roguelike-api.andrewresor7.workers.dev"
+
+auth_token = None
+logged_in = False
 
 
 # ==========================================
@@ -9,6 +21,10 @@ from pyscript import document
 DEV_PASSWORD = "7355608"
 
 dev_mode = False
+
+# Once DEV has been activated during a run,
+# that entire run is permanently disqualified.
+run_disqualified = False
 
 
 # ==========================================
@@ -40,7 +56,7 @@ enemies = [
     ["Dragon", 250, 25],
     ["Robotic Orc", 350, 35],
     ["Jordan Yoder", 450, 50],
-    ["Riley Gould", 150, 100
+    ["Riley Gould", 150, 100]
 ]
 
 enemy_number = 0
@@ -62,6 +78,478 @@ def controls(html):
     document.querySelector("#controls").innerHTML = html
 
 
+def login_message(text="", error=False):
+
+    element = document.querySelector("#login-message")
+
+    element.innerText = text
+
+    if error:
+        element.className = "error"
+    else:
+        element.className = "success"
+
+
+# ==========================================
+# API HELPERS
+# ==========================================
+
+async def api_request(
+    path,
+    method="GET",
+    body=None,
+    use_auth=False
+):
+
+    headers = {
+        "Content-Type": "application/json"
+    }
+
+    if use_auth and auth_token:
+        headers["Authorization"] = (
+            f"Bearer {auth_token}"
+        )
+
+    options = {
+        "method": method,
+        "headers": headers
+    }
+
+    if body is not None:
+        options["body"] = JSON.stringify(body)
+
+    try:
+
+        response = await fetch(
+            API_URL + path,
+            options
+        )
+
+        data = await response.json()
+
+        return response.status, data
+
+    except Exception as error:
+
+        print(
+            "API ERROR:",
+            error
+        )
+
+        return 0, None
+
+
+# ==========================================
+# REGISTER
+# ==========================================
+
+async def register(event=None):
+
+    global auth_token
+    global logged_in
+    global name
+
+    username = document.querySelector(
+        "#account-username"
+    ).value.strip()
+
+    password = document.querySelector(
+        "#account-password"
+    ).value
+
+    login_message("Creating account...")
+
+    status, data = await api_request(
+        "/register",
+        "POST",
+        {
+            "username": username,
+            "password": password
+        }
+    )
+
+    if data is None:
+
+        login_message(
+            "Could not connect to account server.",
+            True
+        )
+
+        return
+
+    if status not in (200, 201):
+
+        login_message(
+            data.error or "Registration failed.",
+            True
+        )
+
+        return
+
+    auth_token = data.token
+    logged_in = True
+    name = data.user.username
+
+    localStorage.setItem(
+        "roguelike_token",
+        auth_token
+    )
+
+    login_message("")
+
+    show_logged_in()
+
+    await load_leaderboards()
+
+    reset_run()
+
+    show_start()
+
+
+# ==========================================
+# LOGIN
+# ==========================================
+
+async def login(event=None):
+
+    global auth_token
+    global logged_in
+    global name
+
+    username = document.querySelector(
+        "#account-username"
+    ).value.strip()
+
+    password = document.querySelector(
+        "#account-password"
+    ).value
+
+    login_message("Logging in...")
+
+    status, data = await api_request(
+        "/login",
+        "POST",
+        {
+            "username": username,
+            "password": password
+        }
+    )
+
+    if data is None:
+
+        login_message(
+            "Could not connect to account server.",
+            True
+        )
+
+        return
+
+    if status != 200:
+
+        login_message(
+            data.error or "Login failed.",
+            True
+        )
+
+        return
+
+    auth_token = data.token
+    logged_in = True
+    name = data.user.username
+
+    localStorage.setItem(
+        "roguelike_token",
+        auth_token
+    )
+
+    login_message("")
+
+    show_logged_in()
+
+    await load_leaderboards()
+
+    reset_run()
+
+    show_start()
+
+
+# ==========================================
+# LOGOUT
+# ==========================================
+
+async def logout(event=None):
+
+    global auth_token
+    global logged_in
+    global name
+
+    if auth_token:
+
+        await api_request(
+            "/logout",
+            "POST",
+            use_auth=True
+        )
+
+    auth_token = None
+    logged_in = False
+    name = ""
+
+    localStorage.removeItem(
+        "roguelike_token"
+    )
+
+    document.querySelector(
+        "#account-bar"
+    ).style.display = "none"
+
+    document.querySelector(
+        "#login-area"
+    ).style.display = "block"
+
+    document.querySelector(
+        "#account-password"
+    ).value = ""
+
+    display("""
+========================
+       ROGUELIKE
+========================
+
+Log in or create an account to play.
+""")
+
+    controls("")
+
+
+# ==========================================
+# ACCOUNT DISPLAY
+# ==========================================
+
+def show_logged_in():
+
+    document.querySelector(
+        "#login-area"
+    ).style.display = "none"
+
+    document.querySelector(
+        "#account-bar"
+    ).style.display = "block"
+
+    document.querySelector(
+        "#account-status"
+    ).innerText = f"Logged in as: {name}"
+
+
+# ==========================================
+# RESTORE LOGIN
+# ==========================================
+
+async def restore_session():
+
+    global auth_token
+    global logged_in
+    global name
+
+    saved_token = localStorage.getItem(
+        "roguelike_token"
+    )
+
+    if not saved_token:
+
+        show_logged_out()
+
+        await load_leaderboards()
+
+        return
+
+    auth_token = saved_token
+
+    status, data = await api_request(
+        "/me",
+        use_auth=True
+    )
+
+    if (
+        status == 200
+        and data
+        and data.logged_in
+    ):
+
+        logged_in = True
+        name = data.user.username
+
+        show_logged_in()
+
+        reset_run()
+
+        show_start()
+
+    else:
+
+        auth_token = None
+        logged_in = False
+
+        localStorage.removeItem(
+            "roguelike_token"
+        )
+
+        show_logged_out()
+
+    await load_leaderboards()
+
+
+def show_logged_out():
+
+    document.querySelector(
+        "#account-bar"
+    ).style.display = "none"
+
+    document.querySelector(
+        "#login-area"
+    ).style.display = "block"
+
+    display("""
+========================
+       ROGUELIKE
+========================
+
+Log in or create an account to play.
+""")
+
+    controls("")
+
+
+# ==========================================
+# LEADERBOARDS
+# ==========================================
+
+async def load_leaderboards():
+
+    status, data = await api_request(
+        "/leaderboards"
+    )
+
+    if status != 200 or data is None:
+
+        document.querySelector(
+            "#wins-leaderboard"
+        ).innerText = "Unable to load."
+
+        document.querySelector(
+            "#furthest-leaderboard"
+        ).innerText = "Unable to load."
+
+        return
+
+    # Wins
+
+    wins_html = ""
+
+    for index, player in enumerate(
+        data.wins
+    ):
+
+        wins_html += (
+            '<div class="leaderboard-row">'
+            f'<span>{index + 1}. '
+            f'{player.username}</span>'
+            f'<span>{player.wins}</span>'
+            '</div>'
+        )
+
+    if not wins_html:
+
+        wins_html = (
+            '<div class="leaderboard-empty">'
+            'No wins yet.'
+            '</div>'
+        )
+
+    document.querySelector(
+        "#wins-leaderboard"
+    ).innerHTML = wins_html
+
+    # Furthest run
+
+    furthest_html = ""
+
+    for index, player in enumerate(
+        data.furthest
+    ):
+
+        furthest_html += (
+            '<div class="leaderboard-row">'
+            f'<span>{index + 1}. '
+            f'{player.username}</span>'
+            f'<span>{player.furthest_enemy}</span>'
+            '</div>'
+        )
+
+    if not furthest_html:
+
+        furthest_html = (
+            '<div class="leaderboard-empty">'
+            'No runs yet.'
+            '</div>'
+        )
+
+    document.querySelector(
+        "#furthest-leaderboard"
+    ).innerHTML = furthest_html
+
+
+# ==========================================
+# SUBMIT PROGRESS
+# ==========================================
+
+async def submit_progress():
+
+    if (
+        not logged_in
+        or run_disqualified
+    ):
+        return
+
+    # Human-readable round numbers:
+    # enemy_number 0 = Round 1
+
+    round_number = enemy_number + 1
+
+    await api_request(
+        "/progress",
+        "POST",
+        {
+            "furthest_enemy":
+                round_number
+        },
+        use_auth=True
+    )
+
+    await load_leaderboards()
+
+
+# ==========================================
+# SUBMIT WIN
+# ==========================================
+
+async def submit_win():
+
+    if (
+        not logged_in
+        or run_disqualified
+    ):
+        return
+
+    await api_request(
+        "/win",
+        "POST",
+        use_auth=True
+    )
+
+    await load_leaderboards()
+
+
 # ==========================================
 # DEV MODE FUNCTIONS
 # ==========================================
@@ -72,20 +560,34 @@ def open_dev_login(event=None):
         open_dev_panel()
         return
 
-    document.querySelector("#dev-login").style.display = "block"
-    document.querySelector("#dev-status").innerText = ""
+    document.querySelector(
+        "#dev-login"
+    ).style.display = "block"
+
+    document.querySelector(
+        "#dev-status"
+    ).innerText = ""
 
 
 def close_dev_login(event=None):
 
-    document.querySelector("#dev-login").style.display = "none"
-    document.querySelector("#dev-password").value = ""
-    document.querySelector("#dev-status").innerText = ""
+    document.querySelector(
+        "#dev-login"
+    ).style.display = "none"
+
+    document.querySelector(
+        "#dev-password"
+    ).value = ""
+
+    document.querySelector(
+        "#dev-status"
+    ).innerText = ""
 
 
 def check_dev_password(event=None):
 
     global dev_mode
+    global run_disqualified
 
     entered_password = document.querySelector(
         "#dev-password"
@@ -94,6 +596,9 @@ def check_dev_password(event=None):
     if entered_password == DEV_PASSWORD:
 
         dev_mode = True
+
+        # Permanent for current run
+        run_disqualified = True
 
         document.querySelector(
             "#dev-login"
@@ -121,7 +626,6 @@ def open_dev_panel(event=None):
     if not dev_mode:
         return
 
-    # Fill current player stats
     document.querySelector(
         "#dev-health"
     ).value = str(health)
@@ -150,8 +654,9 @@ def open_dev_panel(event=None):
         "#dev-heal"
     ).value = str(heal_rate)
 
-    # Automatically generate enemy list
-    enemy_select = document.querySelector("#dev-enemy")
+    enemy_select = document.querySelector(
+        "#dev-enemy"
+    )
 
     options = ""
 
@@ -182,7 +687,10 @@ def close_dev_panel(event=None):
     ).style.display = "none"
 
 
-def get_dev_number(element_id, fallback):
+def get_dev_number(
+    element_id,
+    fallback
+):
 
     try:
 
@@ -248,28 +756,52 @@ def apply_dev_changes(event=None):
         heal_rate
     )
 
-    # Prevent invalid values
-    max_health = max(1, max_health)
-    max_mana = max(0, max_mana)
-    max_damage = max(1, max_damage)
-    mana_regen = max(0, mana_regen)
-    heal_rate = max(1, heal_rate)
+    max_health = max(
+        1,
+        max_health
+    )
 
-    health = max(0, health)
-    mana = max(0, mana)
+    max_mana = max(
+        0,
+        max_mana
+    )
 
-    # Keep current values within maximums
+    max_damage = max(
+        1,
+        max_damage
+    )
+
+    mana_regen = max(
+        0,
+        mana_regen
+    )
+
+    heal_rate = max(
+        1,
+        heal_rate
+    )
+
+    health = max(
+        0,
+        health
+    )
+
+    mana = max(
+        0,
+        mana
+    )
+
     if health > max_health:
         health = max_health
 
     if mana > max_mana:
         mana = max_mana
 
-    # Refresh combat display if an enemy exists
     if enemy_name:
 
         show_combat(
-            "Developer stats applied."
+            "Developer stats applied.\n"
+            "Leaderboard disabled for this run."
         )
 
 
@@ -291,10 +823,8 @@ def dev_load_enemy(event=None):
     except:
         return
 
-    # Apply stat changes too
     apply_dev_changes()
 
-    # Start selected enemy at full HP
     start_enemy()
 
     close_dev_panel()
@@ -320,17 +850,30 @@ def regenerate_mana():
 
 def show_start():
 
-    display("""
+    if not logged_in:
+
+        show_logged_out()
+
+        return
+
+    display(f"""
 ========================
-       Roguelike
+       ROGUELIKE
 ========================
 
-Enter your name to begin.
+Welcome, {name}.
+
+Fight through every enemy.
+Choose an upgrade after each victory.
+
+Your leaderboard progress will be
+saved automatically.
 """)
 
     controls("""
-        <input id="nameInput" placeholder="Your name">
-        <button py-click="start_game">START</button>
+        <button py-click="start_game">
+            START RUN
+        </button>
     """)
 
 
@@ -340,16 +883,68 @@ Enter your name to begin.
 
 def start_game(event=None):
 
-    global name
+    if not logged_in:
+        return
 
-    name = document.querySelector(
-        "#nameInput"
-    ).value.strip()
-
-    if not name:
-        name = "Player"
+    reset_run()
 
     start_enemy()
+
+
+# ==========================================
+# RESET RUN
+# ==========================================
+
+def reset_run():
+
+    global max_health
+    global health
+
+    global max_mana
+    global mana
+    global mana_regen
+
+    global max_damage
+    global heal_rate
+
+    global enemy_number
+    global enemy_name
+    global enemy_hp
+    global enemy_max_dmg
+
+    global dev_mode
+    global run_disqualified
+
+    max_health = 100
+    health = max_health
+
+    max_mana = 50
+    mana = max_mana
+    mana_regen = 3
+
+    max_damage = 15
+    heal_rate = 20
+
+    enemy_number = 0
+
+    enemy_name = ""
+    enemy_hp = 0
+    enemy_max_dmg = 0
+
+    dev_mode = False
+    run_disqualified = False
+
+    document.querySelector(
+        "#dev-button"
+    ).innerText = "DEV"
+
+    document.querySelector(
+        "#dev-panel"
+    ).style.display = "none"
+
+    document.querySelector(
+        "#dev-login"
+    ).style.display = "none"
 
 
 # ==========================================
@@ -362,11 +957,18 @@ def start_enemy():
     global enemy_hp
     global enemy_max_dmg
 
-    enemy = enemies[enemy_number]
+    enemy = enemies[
+        enemy_number
+    ]
 
     enemy_name = enemy[0]
     enemy_hp = enemy[1]
     enemy_max_dmg = enemy[2]
+
+    # Record legitimate progress
+    asyncio.create_task(
+        submit_progress()
+    )
 
     show_combat(
         f"You encounter a {enemy_name}!"
@@ -379,11 +981,21 @@ def start_enemy():
 
 def show_combat(message=""):
 
+    dev_text = ""
+
+    if run_disqualified:
+
+        dev_text = (
+            "\n\n[DEV RUN - "
+            "LEADERBOARD DISABLED]"
+        )
+
     display(f"""
 ========================
        {name}
 ========================
 
+Round:      {enemy_number + 1}
 HP:         {max(health, 0)}/{max_health}
 Mana:       {mana}/{max_mana}
 Mana Regen: {mana_regen}/turn
@@ -399,12 +1011,17 @@ HP:         {max(enemy_hp, 0)}
 Damage:     1-{enemy_max_dmg}
 
 
-{message}
+{message}{dev_text}
 """)
 
     controls("""
-        <button py-click="attack">ATTACK</button>
-        <button py-click="heal">HEAL (10 MANA)</button>
+        <button py-click="attack">
+            ATTACK
+        </button>
+
+        <button py-click="heal">
+            HEAL (10 MANA)
+        </button>
     """)
 
 
@@ -417,7 +1034,10 @@ def attack(event=None):
     global enemy_hp
     global health
 
-    damage = randint(1, max_damage)
+    damage = randint(
+        1,
+        max_damage
+    )
 
     enemy_hp -= damage
 
@@ -449,6 +1069,7 @@ def attack(event=None):
     if health <= 0:
 
         game_over()
+
         return
 
     regenerate_mana()
@@ -504,6 +1125,7 @@ def heal(event=None):
     if health <= 0:
 
         game_over()
+
         return
 
     regenerate_mana()
@@ -628,6 +1250,7 @@ def next_enemy():
     if enemy_number >= len(enemies):
 
         win_game()
+
         return
 
     start_enemy()
@@ -639,12 +1262,29 @@ def next_enemy():
 
 def game_over():
 
+    leaderboard_text = ""
+
+    if run_disqualified:
+
+        leaderboard_text = (
+            "\nDEV MODE was used.\n"
+            "This run was not submitted."
+        )
+
+    else:
+
+        leaderboard_text = (
+            "\nYour furthest round has been saved."
+        )
+
     display(f"""
 ========================
        GAME OVER
 ========================
 
 {name} has fallen.
+
+You reached Round {enemy_number + 1}.
 
 
 FINAL STATS
@@ -654,6 +1294,8 @@ Max Mana:    {max_mana}
 Mana Regen:  {mana_regen}/turn
 Max Damage:  {max_damage}
 Heal Rate:   {heal_rate}
+
+{leaderboard_text}
 """)
 
     controls("""
@@ -669,12 +1311,31 @@ Heal Rate:   {heal_rate}
 
 def win_game():
 
+    if not run_disqualified:
+
+        asyncio.create_task(
+            submit_win()
+        )
+
+        leaderboard_text = (
+            "\nWin recorded!"
+        )
+
+    else:
+
+        leaderboard_text = (
+            "\nDEV MODE was used.\n"
+            "Win was not submitted."
+        )
+
     display(f"""
 ========================
-        YOU WIN!
+         YOU WIN!
 ========================
 
 {name} defeated every enemy!
+
+Rounds cleared: {len(enemies)}
 
 
 FINAL BUILD
@@ -684,6 +1345,8 @@ Max Mana:    {max_mana}
 Mana Regen:  {mana_regen}/turn
 Max Damage:  {max_damage}
 Heal Rate:   {heal_rate}
+
+{leaderboard_text}
 """)
 
     controls("""
@@ -699,55 +1362,7 @@ Heal Rate:   {heal_rate}
 
 def restart_game(event=None):
 
-    global max_health
-    global health
-
-    global max_mana
-    global mana
-    global mana_regen
-
-    global max_damage
-    global heal_rate
-
-    global enemy_number
-    global enemy_name
-    global enemy_hp
-    global enemy_max_dmg
-
-    global dev_mode
-
-    # Disable dev mode for the new run
-    dev_mode = False
-
-    document.querySelector(
-        "#dev-button"
-    ).innerText = "DEV"
-
-    document.querySelector(
-        "#dev-panel"
-    ).style.display = "none"
-
-    document.querySelector(
-        "#dev-login"
-    ).style.display = "none"
-
-    # Reset player
-    max_health = 100
-    health = max_health
-
-    max_mana = 50
-    mana = max_mana
-    mana_regen = 3
-
-    max_damage = 15
-    heal_rate = 20
-
-    # Reset enemies
-    enemy_number = 0
-
-    enemy_name = ""
-    enemy_hp = 0
-    enemy_max_dmg = 0
+    reset_run()
 
     show_start()
 
@@ -756,4 +1371,6 @@ def restart_game(event=None):
 # BOOT
 # ==========================================
 
-show_start()
+asyncio.create_task(
+    restore_session()
+)
