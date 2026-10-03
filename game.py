@@ -41,7 +41,10 @@ max_mana = 50
 mana = max_mana
 mana_regen = 3
 
+min_damage = 1
 max_damage = 15
+
+min_heal = 1
 heal_rate = 20
 
 
@@ -510,10 +513,6 @@ async def load_leaderboards():
 
         return
 
-    # ------------------------------
-    # WINS
-    # ------------------------------
-
     wins_html = ""
 
     for index, player in enumerate(
@@ -539,10 +538,6 @@ async def load_leaderboards():
     document.querySelector(
         "#wins-leaderboard"
     ).innerHTML = wins_html
-
-    # ------------------------------
-    # FURTHEST RUN
-    # ------------------------------
 
     furthest_html = ""
 
@@ -806,7 +801,10 @@ def apply_dev_changes(event=None):
     global max_mana
     global mana_regen
 
+    global min_damage
     global max_damage
+
+    global min_heal
     global heal_rate
 
     if not dev_mode:
@@ -858,7 +856,7 @@ def apply_dev_changes(event=None):
     )
 
     max_damage = max(
-        1,
+        min_damage,
         max_damage
     )
 
@@ -868,7 +866,7 @@ def apply_dev_changes(event=None):
     )
 
     heal_rate = max(
-        1,
+        min_heal,
         heal_rate
     )
 
@@ -998,7 +996,10 @@ def reset_run():
     global mana
     global mana_regen
 
+    global min_damage
     global max_damage
+
+    global min_heal
     global heal_rate
 
     global enemy_number
@@ -1016,7 +1017,10 @@ def reset_run():
     mana = max_mana
     mana_regen = 3
 
+    min_damage = 1
     max_damage = 15
+
+    min_heal = 1
     heal_rate = 20
 
     enemy_number = 0
@@ -1062,10 +1066,6 @@ def start_enemy():
 
     enemy_max_dmg = enemy[2]
 
-    # Save the round automatically.
-    # DEV runs are rejected by
-    # submit_progress().
-
     asyncio.create_task(
         submit_progress()
     )
@@ -1101,8 +1101,8 @@ Round:      {enemy_number + 1}
 HP:         {max(health, 0)}/{max_health}
 Mana:       {mana}/{max_mana}
 Mana Regen: {mana_regen}/turn
-Damage:     1-{max_damage}
-Heal Rate:  1-{heal_rate}
+Damage:     {min_damage}-{max_damage}
+Heal Rate:  {min_heal}-{heal_rate}
 
 
 ========================
@@ -1137,7 +1137,7 @@ def attack(event=None):
     global health
 
     damage = randint(
-        1,
+        min_damage,
         max_damage
     )
 
@@ -1203,7 +1203,7 @@ def heal(event=None):
     mana -= 10
 
     healing = randint(
-        1,
+        min_heal,
         heal_rate
     )
 
@@ -1251,12 +1251,29 @@ def show_upgrade(message=""):
         max_mana * 1.25
     )
 
-    new_damage = round(
-        max_damage * 1.15
+    new_min_damage = max(
+        min_damage + 1,
+        round(min_damage * 1.15)
     )
 
-    new_heal = round(
-        heal_rate * 1.25
+    new_max_damage = max(
+        max_damage + 1,
+        round(max_damage * 1.15)
+    )
+
+    new_min_heal = max(
+        min_heal + 1,
+        round(min_heal * 1.25)
+    )
+
+    new_max_heal = max(
+        heal_rate + 1,
+        round(heal_rate * 1.25)
+    )
+
+    new_regen = max(
+        mana_regen + 1,
+        round(mana_regen * 1.25)
     )
 
     display(f"""
@@ -1269,11 +1286,18 @@ def show_upgrade(message=""):
 MAX MANA +25%
 {max_mana} -> {new_mana}
 
-MAX DAMAGE +15%
-{max_damage} -> {new_damage}
+DAMAGE +15%
+{min_damage}-{max_damage}
+->
+{new_min_damage}-{new_max_damage}
 
-HEAL RATE +25%
-{heal_rate} -> {new_heal}
+HEALING +25%
+{min_heal}-{heal_rate}
+->
+{new_min_heal}-{new_max_heal}
+
+MANA REGEN +25%
+{mana_regen}/turn -> {new_regen}/turn
 """)
 
     controls("""
@@ -1287,6 +1311,10 @@ HEAL RATE +25%
 
         <button py-click="upgrade_heal">
             HEALING +25%
+        </button>
+
+        <button py-click="upgrade_regen">
+            MANA REGEN +25%
         </button>
     """)
 
@@ -1315,11 +1343,18 @@ def upgrade_mana(event=None):
 
 def upgrade_damage(event=None):
 
+    global min_damage
     global max_damage
     global mana
 
-    max_damage = round(
-        max_damage * 1.15
+    min_damage = max(
+        min_damage + 1,
+        round(min_damage * 1.15)
+    )
+
+    max_damage = max(
+        max_damage + 1,
+        round(max_damage * 1.15)
     )
 
     mana = max_mana
@@ -1333,11 +1368,37 @@ def upgrade_damage(event=None):
 
 def upgrade_heal(event=None):
 
+    global min_heal
     global heal_rate
     global mana
 
-    heal_rate = round(
-        heal_rate * 1.25
+    min_heal = max(
+        min_heal + 1,
+        round(min_heal * 1.25)
+    )
+
+    heal_rate = max(
+        heal_rate + 1,
+        round(heal_rate * 1.25)
+    )
+
+    mana = max_mana
+
+    next_enemy()
+
+
+# ==========================================
+# MANA REGEN UPGRADE
+# ==========================================
+
+def upgrade_regen(event=None):
+
+    global mana_regen
+    global mana
+
+    mana_regen = max(
+        mana_regen + 1,
+        round(mana_regen * 1.25)
     )
 
     mana = max_mana
@@ -1352,6 +1413,41 @@ def upgrade_heal(event=None):
 def next_enemy():
 
     global enemy_number
+
+    global max_health
+    global health
+
+    global mana
+
+    # Every completed round gives
+    # a permanent +25 maximum HP.
+    max_health += 25
+
+    # Recover a random amount equal to
+    # 25%-75% of the new maximum HP.
+    min_recovery = max(
+        1,
+        round(max_health * 0.25)
+    )
+
+    max_recovery = max(
+        min_recovery,
+        round(max_health * 0.75)
+    )
+
+    recovered_health = randint(
+        min_recovery,
+        max_recovery
+    )
+
+    health += recovered_health
+
+    if health > max_health:
+
+        health = max_health
+
+    # Refill mana between rounds.
+    mana = max_mana
 
     enemy_number += 1
 
@@ -1401,8 +1497,8 @@ FINAL STATS
 Max HP:      {max_health}
 Max Mana:    {max_mana}
 Mana Regen:  {mana_regen}/turn
-Max Damage:  {max_damage}
-Heal Rate:   {heal_rate}
+Damage:      {min_damage}-{max_damage}
+Heal Rate:   {min_heal}-{heal_rate}
 
 {leaderboard_text}
 """)
@@ -1452,8 +1548,8 @@ FINAL BUILD
 Max HP:      {max_health}
 Max Mana:    {max_mana}
 Mana Regen:  {mana_regen}/turn
-Max Damage:  {max_damage}
-Heal Rate:   {heal_rate}
+Damage:      {min_damage}-{max_damage}
+Heal Rate:   {min_heal}-{heal_rate}
 
 {leaderboard_text}
 """)
