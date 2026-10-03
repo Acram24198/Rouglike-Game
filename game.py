@@ -35,11 +35,12 @@ heal_rate = 20
 enemies = [
     ["Goblin", 75, 5],
     ["Skeleton", 100, 12],
-    ["Orc", 125, 18],
-    ["Dark Knight", 175, 25],
-    ["Dragon", 250, 30],
-    ["Robotic Orc", 350, 45],
-    ["Jordan Yoder", 450, 60]
+    ["Orc", 125, 15],
+    ["Dark Knight", 175, 20],
+    ["Dragon", 250, 25],
+    ["Robotic Orc", 350, 35],
+    ["Jordan Yoder", 450, 50],
+    ["Riley Gould", 150, 100
 ]
 
 enemy_number = 0
