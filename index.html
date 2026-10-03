@@ -27,6 +27,10 @@
             text-align: center;
         }
 
+        /* ============================= */
+        /* SITE NOTICE                   */
+        /* ============================= */
+
         #site-notice {
             background: #332b0b;
             color: #ffe69c;
@@ -41,6 +45,98 @@
         #site-notice strong {
             color: #ffffff;
         }
+
+        /* ============================= */
+        /* ACCOUNT BAR                   */
+        /* ============================= */
+
+        #account-bar {
+            border: 2px solid #555;
+            padding: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        #account-status {
+            margin-right: 10px;
+        }
+
+        /* ============================= */
+        /* LEADERBOARDS                  */
+        /* ============================= */
+
+        #leaderboards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .leaderboard {
+            border: 2px solid #555;
+            padding: 15px;
+            min-height: 180px;
+        }
+
+        .leaderboard h2 {
+            text-align: center;
+            font-size: 18px;
+            margin-top: 0;
+            border-bottom: 1px solid #555;
+            padding-bottom: 8px;
+        }
+
+        .leaderboard-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+        }
+
+        .leaderboard-empty {
+            color: #888;
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        /* ============================= */
+        /* LOGIN                         */
+        /* ============================= */
+
+        #login-area {
+            border: 2px solid #555;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        #login-area h2 {
+            margin-top: 0;
+        }
+
+        #login-area input {
+            display: block;
+            width: 80%;
+            max-width: 350px;
+            box-sizing: border-box;
+            margin: 8px auto;
+        }
+
+        #login-message {
+            min-height: 20px;
+            margin-top: 10px;
+        }
+
+        .error {
+            color: #ff7777;
+        }
+
+        .success {
+            color: #77ff77;
+        }
+
+        /* ============================= */
+        /* GAME                          */
+        /* ============================= */
 
         #game {
             border: 2px solid #555;
@@ -68,7 +164,9 @@
             text-align: center;
         }
 
-        /* DEV BUTTON */
+        /* ============================= */
+        /* DEV BUTTON                    */
+        /* ============================= */
 
         #dev-button {
             position: fixed;
@@ -90,7 +188,9 @@
             border-color: #888;
         }
 
-        /* DEV LOGIN */
+        /* ============================= */
+        /* DEV LOGIN                     */
+        /* ============================= */
 
         #dev-login {
             display: none;
@@ -118,7 +218,9 @@
             margin: 3px;
         }
 
-        /* DEV PANEL */
+        /* ============================= */
+        /* DEV PANEL                     */
+        /* ============================= */
 
         #dev-panel {
             display: none;
@@ -141,6 +243,14 @@
             color: #ff5555;
             margin-top: 0;
             text-align: center;
+        }
+
+        .dev-warning {
+            color: #ff7777;
+            text-align: center;
+            border: 1px solid #ff5555;
+            padding: 8px;
+            margin-bottom: 12px;
         }
 
         .dev-row {
@@ -169,10 +279,29 @@
             text-align: center;
             margin-top: 8px;
         }
+
+        /* ============================= */
+        /* MOBILE                        */
+        /* ============================= */
+
+        @media (max-width: 600px) {
+            #leaderboards {
+                grid-template-columns: 1fr;
+            }
+
+            body {
+                margin-top: 50px;
+                padding: 10px;
+            }
+        }
     </style>
 </head>
 
 <body>
+
+<!-- ============================= -->
+<!-- DEV MODE                      -->
+<!-- ============================= -->
 
 <button id="dev-button" py-click="open_dev_login">
     DEV
@@ -190,6 +319,7 @@
         placeholder="Password">
 
     <div style="text-align:center;">
+
         <button py-click="check_dev_password">
             LOGIN
         </button>
@@ -197,6 +327,7 @@
         <button py-click="close_dev_login">
             CANCEL
         </button>
+
     </div>
 
     <div id="dev-status"></div>
@@ -207,6 +338,11 @@
 <div id="dev-panel">
 
     <h2>DEV MODE</h2>
+
+    <div class="dev-warning">
+        DEV MODE DISABLES LEADERBOARD
+        SUBMISSIONS FOR THIS RUN.
+    </div>
 
     <div class="dev-row">
         <label>Health</label>
@@ -267,22 +403,109 @@
 </div>
 
 
+<!-- ============================= -->
+<!-- MAIN PAGE                     -->
+<!-- ============================= -->
+
 <h1>Roguelike by A.R.</h1>
 
+
 <div id="site-notice">
+
     <strong>NOTICE:</strong><br>
+
     This website is an independent project and is not affiliated with,
     endorsed by, or an official website of Lakeland.
-    <br><br>
-    This website has just moved to its new permanent domain and can
-    experience issues as I bug fix and make sure everything works.
+
 </div>
+
+
+<!-- ============================= -->
+<!-- ACCOUNT                       -->
+<!-- ============================= -->
+
+<div id="account-bar" style="display:none;">
+
+    <span id="account-status"></span>
+
+    <button py-click="logout">
+        LOG OUT
+    </button>
+
+</div>
+
+
+<div id="login-area">
+
+    <h2>ACCOUNT LOGIN</h2>
+
+    <input
+        id="account-username"
+        type="text"
+        maxlength="20"
+        autocomplete="username"
+        placeholder="Username">
+
+    <input
+        id="account-password"
+        type="password"
+        maxlength="128"
+        autocomplete="current-password"
+        placeholder="Password">
+
+    <button py-click="login">
+        LOGIN
+    </button>
+
+    <button py-click="register">
+        CREATE ACCOUNT
+    </button>
+
+    <div id="login-message"></div>
+
+</div>
+
+
+<!-- ============================= -->
+<!-- LEADERBOARDS                  -->
+<!-- ============================= -->
+
+<div id="leaderboards">
+
+    <div class="leaderboard">
+
+        <h2>MOST WINS</h2>
+
+        <div id="wins-leaderboard">
+            Loading...
+        </div>
+
+    </div>
+
+
+    <div class="leaderboard">
+
+        <h2>FURTHEST RUN</h2>
+
+        <div id="furthest-leaderboard">
+            Loading...
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ============================= -->
+<!-- GAME                          -->
+<!-- ============================= -->
 
 <div id="game">
 Loading Python...
 </div>
 
 <div id="controls"></div>
+
 
 <script type="py" src="./game.py"></script>
 
