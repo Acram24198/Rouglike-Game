@@ -1,4 +1,3 @@
-```python
 from random import randint
 from pyscript import document
 from pyscript.ffi import to_js
