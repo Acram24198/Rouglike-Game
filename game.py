@@ -14,6 +14,10 @@ API_URL = "https://roguelike-api.andrewresor7.workers.dev"
 auth_token = None
 logged_in = False
 
+supporter = False
+show_supporter_tag = False
+supporter_bonus = False
+
 
 # ==========================================
 # DEV MODE
@@ -22,9 +26,6 @@ logged_in = False
 DEV_PASSWORD = "7355608"
 
 dev_mode = False
-
-# Once DEV mode is activated during a run,
-# that run cannot submit leaderboard stats.
 run_disqualified = False
 
 
@@ -77,23 +78,14 @@ enemy_max_dmg = 0
 # ==========================================
 
 def display(text):
-
-    document.querySelector(
-        "#game"
-    ).innerText = text
+    document.querySelector("#game").innerText = text
 
 
 def controls(html):
-
-    document.querySelector(
-        "#controls"
-    ).innerHTML = html
+    document.querySelector("#controls").innerHTML = html
 
 
-def login_message(
-    text="",
-    error=False
-):
+def login_message(text="", error=False):
 
     element = document.querySelector(
         "#login-message"
@@ -119,15 +111,14 @@ async def api_request(
 ):
 
     headers = {
-        "Content-Type":
-            "application/json"
+        "Content-Type": "application/json"
     }
 
     if use_auth and auth_token:
 
-        headers[
-            "Authorization"
-        ] = f"Bearer {auth_token}"
+        headers["Authorization"] = (
+            f"Bearer {auth_token}"
+        )
 
     options = {
         "method": method,
@@ -149,10 +140,7 @@ async def api_request(
 
         data = await response.json()
 
-        return (
-            response.status,
-            data
-        )
+        return response.status, data
 
     except Exception as error:
 
@@ -165,6 +153,44 @@ async def api_request(
 
 
 # ==========================================
+# ACCOUNT DATA
+# ==========================================
+
+def load_account_data(user):
+
+    global name
+    global supporter
+    global show_supporter_tag
+    global supporter_bonus
+
+    name = user.username
+
+    supporter = bool(
+        getattr(
+            user,
+            "supporter",
+            False
+        )
+    )
+
+    show_supporter_tag = bool(
+        getattr(
+            user,
+            "show_supporter_tag",
+            False
+        )
+    )
+
+    supporter_bonus = bool(
+        getattr(
+            user,
+            "supporter_bonus",
+            False
+        )
+    )
+
+
+# ==========================================
 # REGISTER
 # ==========================================
 
@@ -172,7 +198,6 @@ async def register(event=None):
 
     global auth_token
     global logged_in
-    global name
 
     username = document.querySelector(
         "#account-username"
@@ -204,10 +229,7 @@ async def register(event=None):
 
         return
 
-    if status not in (
-        200,
-        201
-    ):
+    if status not in (200, 201):
 
         error_message = getattr(
             data,
@@ -223,10 +245,11 @@ async def register(event=None):
         return
 
     auth_token = data.token
-
     logged_in = True
 
-    name = data.user.username
+    load_account_data(
+        data.user
+    )
 
     localStorage.setItem(
         "roguelike_token",
@@ -244,7 +267,6 @@ async def register(event=None):
     await load_leaderboards()
 
     reset_run()
-
     show_start()
 
 
@@ -256,7 +278,6 @@ async def login(event=None):
 
     global auth_token
     global logged_in
-    global name
 
     username = document.querySelector(
         "#account-username"
@@ -304,10 +325,11 @@ async def login(event=None):
         return
 
     auth_token = data.token
-
     logged_in = True
 
-    name = data.user.username
+    load_account_data(
+        data.user
+    )
 
     localStorage.setItem(
         "roguelike_token",
@@ -325,7 +347,6 @@ async def login(event=None):
     await load_leaderboards()
 
     reset_run()
-
     show_start()
 
 
@@ -339,6 +360,10 @@ async def logout(event=None):
     global logged_in
     global name
 
+    global supporter
+    global show_supporter_tag
+    global supporter_bonus
+
     if auth_token:
 
         await api_request(
@@ -348,10 +373,12 @@ async def logout(event=None):
         )
 
     auth_token = None
-
     logged_in = False
-
     name = ""
+
+    supporter = False
+    show_supporter_tag = False
+    supporter_bonus = False
 
     localStorage.removeItem(
         "roguelike_token"
@@ -359,6 +386,14 @@ async def logout(event=None):
 
     document.querySelector(
         "#account-bar"
+    ).style.display = "none"
+
+    document.querySelector(
+        "#supporter-settings"
+    ).style.display = "none"
+
+    document.querySelector(
+        "#supporter-button"
     ).style.display = "none"
 
     document.querySelector(
@@ -394,17 +429,52 @@ def show_logged_in():
         "#account-bar"
     ).style.display = "block"
 
+    account_name = name
+
+    if (
+        supporter
+        and show_supporter_tag
+    ):
+        account_name += " ★ SUPPORTER"
+
     document.querySelector(
         "#account-status"
     ).innerText = (
-        f"Logged in as: {name}"
+        f"Logged in as: {account_name}"
     )
+
+    supporter_button = (
+        document.querySelector(
+            "#supporter-button"
+        )
+    )
+
+    if supporter:
+        supporter_button.style.display = (
+            "inline-block"
+        )
+    else:
+        supporter_button.style.display = (
+            "none"
+        )
+
+        document.querySelector(
+            "#supporter-settings"
+        ).style.display = "none"
 
 
 def show_logged_out():
 
     document.querySelector(
         "#account-bar"
+    ).style.display = "none"
+
+    document.querySelector(
+        "#supporter-button"
+    ).style.display = "none"
+
+    document.querySelector(
+        "#supporter-settings"
     ).style.display = "none"
 
     document.querySelector(
@@ -420,6 +490,147 @@ Log in or create an account to play.
 """)
 
     controls("")
+
+
+# ==========================================
+# SUPPORTER SETTINGS
+# ==========================================
+
+def open_supporter_settings(event=None):
+
+    if not supporter:
+        return
+
+    document.querySelector(
+        "#supporter-settings"
+    ).style.display = "block"
+
+    update_supporter_panel()
+
+
+def close_supporter_settings(event=None):
+
+    document.querySelector(
+        "#supporter-settings"
+    ).style.display = "none"
+
+
+def update_supporter_panel():
+
+    if not supporter:
+        return
+
+    if show_supporter_tag:
+        tag_text = "ON"
+    else:
+        tag_text = "OFF"
+
+    if supporter_bonus:
+        bonus_text = "ON"
+        percent_text = "40%"
+    else:
+        bonus_text = "OFF"
+        percent_text = "NORMAL"
+
+    document.querySelector(
+        "#supporter-tag-status"
+    ).innerText = (
+        f"Supporter Tag: {tag_text}"
+    )
+
+    document.querySelector(
+        "#supporter-bonus-status"
+    ).innerText = (
+        f"Supporter Bonus: {bonus_text}"
+    )
+
+    document.querySelector(
+        "#supporter-upgrade-status"
+    ).innerText = (
+        f"Upgrade Power: {percent_text}"
+    )
+
+
+async def save_supporter_settings():
+
+    status, data = await api_request(
+        "/supporter/settings",
+        "POST",
+        {
+            "show_supporter_tag":
+                show_supporter_tag,
+
+            "supporter_bonus":
+                supporter_bonus
+        },
+        use_auth=True
+    )
+
+    if (
+        status == 200
+        and data is not None
+    ):
+
+        load_account_data(
+            data.user
+        )
+
+        show_logged_in()
+        update_supporter_panel()
+
+        await load_leaderboards()
+
+        return True
+
+    return False
+
+
+async def toggle_supporter_tag(
+    event=None
+):
+
+    global show_supporter_tag
+
+    if not supporter:
+        return
+
+    old_value = show_supporter_tag
+
+    show_supporter_tag = (
+        not show_supporter_tag
+    )
+
+    success = await save_supporter_settings()
+
+    if not success:
+
+        show_supporter_tag = old_value
+
+        update_supporter_panel()
+
+
+async def toggle_supporter_bonus(
+    event=None
+):
+
+    global supporter_bonus
+
+    if not supporter:
+        return
+
+    old_value = supporter_bonus
+
+    supporter_bonus = (
+        not supporter_bonus
+    )
+
+    success = await save_supporter_settings()
+
+    if not success:
+
+        supporter_bonus = old_value
+
+        update_supporter_panel()
 
 
 # ==========================================
@@ -459,20 +670,19 @@ async def restore_session():
 
         logged_in = True
 
-        name = data.user.username
+        load_account_data(
+            data.user
+        )
 
         show_logged_in()
 
         reset_run()
-
         show_start()
 
     else:
 
         auth_token = None
-
         logged_in = False
-
         name = ""
 
         localStorage.removeItem(
@@ -487,6 +697,36 @@ async def restore_session():
 # ==========================================
 # LEADERBOARDS
 # ==========================================
+
+def leaderboard_name(player):
+
+    player_name = player.username
+
+    if bool(
+        getattr(
+            player,
+            "supporter_tag",
+            False
+        )
+    ):
+        player_name += " ★"
+
+    return player_name
+
+
+def leaderboard_bonus(player):
+
+    if bool(
+        getattr(
+            player,
+            "supporter_bonus",
+            False
+        )
+    ):
+        return " [BONUS]"
+
+    return ""
+
 
 async def load_leaderboards():
 
@@ -519,10 +759,19 @@ async def load_leaderboards():
         data.wins
     ):
 
+        player_name = (
+            leaderboard_name(player)
+        )
+
+        bonus = (
+            leaderboard_bonus(player)
+        )
+
         wins_html += (
             '<div class="leaderboard-row">'
             f'<span>{index + 1}. '
-            f'{player.username}</span>'
+            f'{player_name}'
+            f'{bonus}</span>'
             f'<span>{player.wins}</span>'
             '</div>'
         )
@@ -545,10 +794,19 @@ async def load_leaderboards():
         data.furthest
     ):
 
+        player_name = (
+            leaderboard_name(player)
+        )
+
+        bonus = (
+            leaderboard_bonus(player)
+        )
+
         furthest_html += (
             '<div class="leaderboard-row">'
             f'<span>{index + 1}. '
-            f'{player.username}</span>'
+            f'{player_name}'
+            f'{bonus}</span>'
             f'<span>Round '
             f'{player.furthest_enemy}</span>'
             '</div>'
@@ -594,7 +852,6 @@ async def submit_progress():
     )
 
     if status == 200:
-
         await load_leaderboards()
 
 
@@ -617,7 +874,6 @@ async def submit_win():
     )
 
     if status == 200:
-
         await load_leaderboards()
 
 
@@ -628,9 +884,7 @@ async def submit_win():
 def open_dev_login(event=None):
 
     if dev_mode:
-
         open_dev_panel()
-
         return
 
     document.querySelector(
@@ -671,7 +925,6 @@ def check_dev_password(event=None):
     if entered_password == DEV_PASSWORD:
 
         dev_mode = True
-
         run_disqualified = True
 
         document.querySelector(
@@ -756,9 +1009,7 @@ def open_dev_panel(event=None):
             f'</option>'
         )
 
-    enemy_select.innerHTML = (
-        options
-    )
+    enemy_select.innerHTML = options
 
     document.querySelector(
         "#dev-panel"
@@ -788,7 +1039,6 @@ def get_dev_number(
         return value
 
     except:
-
         return fallback
 
 
@@ -911,7 +1161,6 @@ def dev_load_enemy(event=None):
         )
 
     except:
-
         return
 
     apply_dev_changes()
@@ -932,7 +1181,6 @@ def regenerate_mana():
     mana += mana_regen
 
     if mana > max_mana:
-
         mana = max_mana
 
 
@@ -945,8 +1193,24 @@ def show_start():
     if not logged_in:
 
         show_logged_out()
-
         return
+
+    supporter_text = ""
+
+    if supporter:
+
+        supporter_text = (
+            "\nSupporter Access: ACTIVE"
+        )
+
+        if supporter_bonus:
+            supporter_text += (
+                "\nSupporter Bonus: ON (+40% upgrades)"
+            )
+        else:
+            supporter_text += (
+                "\nSupporter Bonus: OFF"
+            )
 
     display(f"""
 ========================
@@ -960,6 +1224,7 @@ Choose an upgrade after each victory.
 
 Your leaderboard progress will be
 saved automatically.
+{supporter_text}
 """)
 
     controls("""
@@ -1030,7 +1295,6 @@ def reset_run():
     enemy_max_dmg = 0
 
     dev_mode = False
-
     run_disqualified = False
 
     document.querySelector(
@@ -1061,9 +1325,7 @@ def start_enemy():
     ]
 
     enemy_name = enemy[0]
-
     enemy_hp = enemy[1]
-
     enemy_max_dmg = enemy[2]
 
     asyncio.create_task(
@@ -1092,6 +1354,17 @@ def show_combat(message=""):
             "LEADERBOARD DISABLED]"
         )
 
+    supporter_text = ""
+
+    if (
+        supporter
+        and supporter_bonus
+    ):
+
+        supporter_text = (
+            "\nSupporter Bonus: +40% upgrades"
+        )
+
     display(f"""
 ========================
        {name}
@@ -1103,6 +1376,7 @@ Mana:       {mana}/{max_mana}
 Mana Regen: {mana_regen}/turn
 Damage:     {min_damage}-{max_damage}
 Heal Rate:  {min_heal}-{heal_rate}
+{supporter_text}
 
 
 ========================
@@ -1174,7 +1448,6 @@ def attack(event=None):
     if health <= 0:
 
         game_over()
-
         return
 
     regenerate_mana()
@@ -1210,7 +1483,6 @@ def heal(event=None):
     health += healing
 
     if health > max_health:
-
         health = max_health
 
     message = (
@@ -1233,7 +1505,6 @@ def heal(event=None):
     if health <= 0:
 
         game_over()
-
         return
 
     regenerate_mana()
@@ -1242,39 +1513,156 @@ def heal(event=None):
 
 
 # ==========================================
+# UPGRADE HELPERS
+# ==========================================
+
+def mana_upgrade_multiplier():
+
+    if (
+        supporter
+        and supporter_bonus
+    ):
+        return 1.40
+
+    return 1.25
+
+
+def damage_upgrade_multiplier():
+
+    if (
+        supporter
+        and supporter_bonus
+    ):
+        return 1.40
+
+    return 1.15
+
+
+def heal_upgrade_multiplier():
+
+    if (
+        supporter
+        and supporter_bonus
+    ):
+        return 1.40
+
+    return 1.25
+
+
+def regen_upgrade_multiplier():
+
+    if (
+        supporter
+        and supporter_bonus
+    ):
+        return 1.40
+
+    return 1.25
+
+
+def upgrade_percent(multiplier):
+
+    return round(
+        (multiplier - 1) * 100
+    )
+
+
+# ==========================================
 # UPGRADE SCREEN
 # ==========================================
 
 def show_upgrade(message=""):
 
-    new_mana = round(
-        max_mana * 1.25
+    mana_multiplier = (
+        mana_upgrade_multiplier()
+    )
+
+    damage_multiplier = (
+        damage_upgrade_multiplier()
+    )
+
+    heal_multiplier = (
+        heal_upgrade_multiplier()
+    )
+
+    regen_multiplier = (
+        regen_upgrade_multiplier()
+    )
+
+    mana_percent = upgrade_percent(
+        mana_multiplier
+    )
+
+    damage_percent = upgrade_percent(
+        damage_multiplier
+    )
+
+    heal_percent = upgrade_percent(
+        heal_multiplier
+    )
+
+    regen_percent = upgrade_percent(
+        regen_multiplier
+    )
+
+    new_mana = max(
+        max_mana + 1,
+        round(
+            max_mana *
+            mana_multiplier
+        )
     )
 
     new_min_damage = max(
         min_damage + 1,
-        round(min_damage * 1.15)
+        round(
+            min_damage *
+            damage_multiplier
+        )
     )
 
     new_max_damage = max(
         max_damage + 1,
-        round(max_damage * 1.15)
+        round(
+            max_damage *
+            damage_multiplier
+        )
     )
 
     new_min_heal = max(
         min_heal + 1,
-        round(min_heal * 1.25)
+        round(
+            min_heal *
+            heal_multiplier
+        )
     )
 
     new_max_heal = max(
         heal_rate + 1,
-        round(heal_rate * 1.25)
+        round(
+            heal_rate *
+            heal_multiplier
+        )
     )
 
     new_regen = max(
         mana_regen + 1,
-        round(mana_regen * 1.25)
+        round(
+            mana_regen *
+            regen_multiplier
+        )
     )
+
+    bonus_text = ""
+
+    if (
+        supporter
+        and supporter_bonus
+    ):
+
+        bonus_text = (
+            "\n★ SUPPORTER BONUS ACTIVE ★\n"
+        )
 
     display(f"""
 {message}
@@ -1282,39 +1670,39 @@ def show_upgrade(message=""):
 ========================
     CHOOSE AN UPGRADE
 ========================
-
-MAX MANA +25%
+{bonus_text}
+MAX MANA +{mana_percent}%
 {max_mana} -> {new_mana}
 
-DAMAGE +15%
+DAMAGE +{damage_percent}%
 {min_damage}-{max_damage}
 ->
 {new_min_damage}-{new_max_damage}
 
-HEALING +25%
+HEALING +{heal_percent}%
 {min_heal}-{heal_rate}
 ->
 {new_min_heal}-{new_max_heal}
 
-MANA REGEN +25%
+MANA REGEN +{regen_percent}%
 {mana_regen}/turn -> {new_regen}/turn
 """)
 
-    controls("""
+    controls(f"""
         <button py-click="upgrade_mana">
-            MANA +25%
+            MANA +{mana_percent}%
         </button>
 
         <button py-click="upgrade_damage">
-            DAMAGE +15%
+            DAMAGE +{damage_percent}%
         </button>
 
         <button py-click="upgrade_heal">
-            HEALING +25%
+            HEALING +{heal_percent}%
         </button>
 
         <button py-click="upgrade_regen">
-            MANA REGEN +25%
+            MANA REGEN +{regen_percent}%
         </button>
     """)
 
@@ -1328,8 +1716,16 @@ def upgrade_mana(event=None):
     global max_mana
     global mana
 
-    max_mana = round(
-        max_mana * 1.25
+    multiplier = (
+        mana_upgrade_multiplier()
+    )
+
+    max_mana = max(
+        max_mana + 1,
+        round(
+            max_mana *
+            multiplier
+        )
     )
 
     mana = max_mana
@@ -1347,14 +1743,24 @@ def upgrade_damage(event=None):
     global max_damage
     global mana
 
+    multiplier = (
+        damage_upgrade_multiplier()
+    )
+
     min_damage = max(
         min_damage + 1,
-        round(min_damage * 1.15)
+        round(
+            min_damage *
+            multiplier
+        )
     )
 
     max_damage = max(
         max_damage + 1,
-        round(max_damage * 1.15)
+        round(
+            max_damage *
+            multiplier
+        )
     )
 
     mana = max_mana
@@ -1372,14 +1778,24 @@ def upgrade_heal(event=None):
     global heal_rate
     global mana
 
+    multiplier = (
+        heal_upgrade_multiplier()
+    )
+
     min_heal = max(
         min_heal + 1,
-        round(min_heal * 1.25)
+        round(
+            min_heal *
+            multiplier
+        )
     )
 
     heal_rate = max(
         heal_rate + 1,
-        round(heal_rate * 1.25)
+        round(
+            heal_rate *
+            multiplier
+        )
     )
 
     mana = max_mana
@@ -1396,9 +1812,16 @@ def upgrade_regen(event=None):
     global mana_regen
     global mana
 
+    multiplier = (
+        regen_upgrade_multiplier()
+    )
+
     mana_regen = max(
         mana_regen + 1,
-        round(mana_regen * 1.25)
+        round(
+            mana_regen *
+            multiplier
+        )
     )
 
     mana = max_mana
@@ -1423,8 +1846,7 @@ def next_enemy():
     # a permanent +25 maximum HP.
     max_health += 25
 
-    # Recover a random amount equal to
-    # 25%-75% of the new maximum HP.
+    # Recover 25%-75% of the new max HP.
     min_recovery = max(
         1,
         round(max_health * 0.25)
@@ -1443,10 +1865,8 @@ def next_enemy():
     health += recovered_health
 
     if health > max_health:
-
         health = max_health
 
-    # Refill mana between rounds.
     mana = max_mana
 
     enemy_number += 1
@@ -1456,7 +1876,6 @@ def next_enemy():
     ):
 
         win_game()
-
         return
 
     start_enemy()
@@ -1482,6 +1901,17 @@ def game_over():
             "has been saved."
         )
 
+    bonus_text = ""
+
+    if (
+        supporter
+        and supporter_bonus
+    ):
+
+        bonus_text = (
+            "\nSupporter Bonus: ACTIVE"
+        )
+
     display(f"""
 ========================
        GAME OVER
@@ -1499,6 +1929,7 @@ Max Mana:    {max_mana}
 Mana Regen:  {mana_regen}/turn
 Damage:      {min_damage}-{max_damage}
 Heal Rate:   {min_heal}-{heal_rate}
+{bonus_text}
 
 {leaderboard_text}
 """)
@@ -1533,6 +1964,17 @@ def win_game():
             "Win was not submitted."
         )
 
+    bonus_text = ""
+
+    if (
+        supporter
+        and supporter_bonus
+    ):
+
+        bonus_text = (
+            "\nSupporter Bonus: ACTIVE"
+        )
+
     display(f"""
 ========================
          YOU WIN!
@@ -1550,6 +1992,7 @@ Max Mana:    {max_mana}
 Mana Regen:  {mana_regen}/turn
 Damage:      {min_damage}-{max_damage}
 Heal Rate:   {min_heal}-{heal_rate}
+{bonus_text}
 
 {leaderboard_text}
 """)
