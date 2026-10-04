@@ -17,6 +17,7 @@ logged_in = False
 supporter = False
 show_supporter_tag = False
 supporter_bonus = False
+is_admin = False
 
 
 # ==========================================
@@ -162,6 +163,7 @@ def load_account_data(user):
     global supporter
     global show_supporter_tag
     global supporter_bonus
+    global is_admin
 
     name = user.username
 
@@ -185,6 +187,14 @@ def load_account_data(user):
         getattr(
             user,
             "supporter_bonus",
+            False
+        )
+    )
+
+    is_admin = bool(
+        getattr(
+            user,
+            "is_admin",
             False
         )
     )
@@ -363,6 +373,7 @@ async def logout(event=None):
     global supporter
     global show_supporter_tag
     global supporter_bonus
+    global is_admin
 
     if auth_token:
 
@@ -379,6 +390,7 @@ async def logout(event=None):
     supporter = False
     show_supporter_tag = False
     supporter_bonus = False
+    is_admin = False
 
     localStorage.removeItem(
         "roguelike_token"
@@ -395,6 +407,14 @@ async def logout(event=None):
     document.querySelector(
         "#supporter-button"
     ).style.display = "none"
+
+    admin_button = document.querySelector("#admin-button")
+    if admin_button:
+        admin_button.style.display = "none"
+
+    admin_panel = document.querySelector("#admin-panel")
+    if admin_panel:
+        admin_panel.style.display = "none"
 
     document.querySelector(
         "#login-area"
@@ -462,6 +482,17 @@ def show_logged_in():
             "#supporter-settings"
         ).style.display = "none"
 
+    admin_button = document.querySelector("#admin-button")
+    if admin_button:
+        admin_button.style.display = (
+            "inline-block" if is_admin else "none"
+        )
+
+    if not is_admin:
+        admin_panel = document.querySelector("#admin-panel")
+        if admin_panel:
+            admin_panel.style.display = "none"
+
 
 def show_logged_out():
 
@@ -477,6 +508,14 @@ def show_logged_out():
         "#supporter-settings"
     ).style.display = "none"
 
+    admin_button = document.querySelector("#admin-button")
+    if admin_button:
+        admin_button.style.display = "none"
+
+    admin_panel = document.querySelector("#admin-panel")
+    if admin_panel:
+        admin_panel.style.display = "none"
+
     document.querySelector(
         "#login-area"
     ).style.display = "block"
@@ -490,6 +529,167 @@ Log in or create an account to play.
 """)
 
     controls("")
+
+
+
+# ==========================================
+# IN-GAME ADMIN
+# ==========================================
+
+def admin_message(text="", error=False):
+    element = document.querySelector("#admin-message")
+    if not element:
+        return
+    element.innerText = text
+    element.className = "error" if error else "success"
+
+
+async def open_admin_panel(event=None):
+    if not is_admin:
+        return
+
+    panel = document.querySelector("#admin-panel")
+    if not panel:
+        return
+
+    document.querySelector("#supporter-settings").style.display = "none"
+    panel.style.display = "block"
+    admin_message("Loading accounts...")
+    await load_admin_users()
+
+
+def close_admin_panel(event=None):
+    panel = document.querySelector("#admin-panel")
+    if panel:
+        panel.style.display = "none"
+
+
+async def load_admin_users(event=None):
+    if not is_admin:
+        return
+
+    status, data = await api_request(
+        "/admin/users",
+        use_auth=True
+    )
+
+    if status != 200 or data is None:
+        message = "Unable to load users."
+        if data is not None:
+            message = getattr(data, "error", message)
+        admin_message(message, True)
+        return
+
+    table = document.querySelector("#admin-users")
+    if not table:
+        return
+
+    rows = ""
+
+    for user in data.users:
+        user_id = int(user.id)
+        username = str(user.username)
+        safe_username = (
+            username
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace('"', "&quot;")
+            .replace("'", "&#39;")
+        )
+
+        supporter_text = "YES" if bool(user.supporter) else "NO"
+        tag_text = "ON" if bool(user.show_supporter_tag) else "OFF"
+        bonus_text = "ON" if bool(user.supporter_bonus) else "OFF"
+
+        if bool(user.supporter):
+            action = (
+                f'<button py-click="remove_supporter" '
+                f'data-user-id="{user_id}">REMOVE</button>'
+            )
+        else:
+            action = (
+                f'<button py-click="grant_supporter" '
+                f'data-user-id="{user_id}">GRANT</button>'
+            )
+
+        rows += (
+            "<tr>"
+            f"<td>{safe_username}</td>"
+            f"<td>{user.wins}</td>"
+            f"<td>{user.furthest_enemy}</td>"
+            f"<td>{supporter_text}</td>"
+            f"<td>{tag_text}</td>"
+            f"<td>{bonus_text}</td>"
+            f"<td>{action}</td>"
+            "</tr>"
+        )
+
+    if not rows:
+        rows = '<tr><td colspan="7">No accounts found.</td></tr>'
+
+    table.innerHTML = rows
+    admin_message(f"Loaded {len(data.users)} accounts.")
+
+
+def admin_event_user_id(event):
+    try:
+        return int(
+            event.currentTarget.getAttribute("data-user-id")
+        )
+    except:
+        return None
+
+
+async def set_supporter_status(user_id, enabled):
+    if not is_admin:
+        return False
+
+    if user_id is None:
+        admin_message("Invalid user ID.", True)
+        return False
+
+    admin_message("Updating supporter status...")
+
+    status, data = await api_request(
+        "/admin/supporter",
+        "POST",
+        {
+            "user_id": user_id,
+            "supporter": enabled
+        },
+        use_auth=True
+    )
+
+    if status != 200 or data is None:
+        message = "Could not update supporter."
+        if data is not None:
+            message = getattr(data, "error", message)
+        admin_message(message, True)
+        return False
+
+    admin_message("Supporter status updated.")
+    await load_admin_users()
+    await load_leaderboards()
+    return True
+
+
+async def grant_supporter(event=None):
+    if event is None:
+        return
+    await set_supporter_status(
+        admin_event_user_id(event),
+        True
+    )
+
+
+async def remove_supporter(event=None):
+    if event is None:
+        return
+    await set_supporter_status(
+        admin_event_user_id(event),
+        False
+    )
 
 
 # ==========================================
