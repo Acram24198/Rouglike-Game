@@ -2,18 +2,26 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>Roguelike</title>
 
-    <link rel="stylesheet"
-          href="https://pyscript.net/releases/2025.8.1/core.css">
+    <link
+        rel="stylesheet"
+        href="https://pyscript.net/releases/2025.8.1/core.css"
+    >
 
-    <script type="module"
-            src="https://pyscript.net/releases/2025.8.1/core.js">
-    </script>
+    <script
+        type="module"
+        src="https://pyscript.net/releases/2025.8.1/core.js"
+    ></script>
 
     <style>
+
         body {
             background: #0d0d0d;
             color: #eeeeee;
@@ -26,6 +34,7 @@
         h1 {
             text-align: center;
         }
+
 
         /* ============================= */
         /* SITE NOTICE                   */
@@ -46,6 +55,7 @@
             color: #ffffff;
         }
 
+
         /* ============================= */
         /* ACCOUNT BAR                   */
         /* ============================= */
@@ -60,6 +70,61 @@
         #account-status {
             margin-right: 10px;
         }
+
+
+        /* ============================= */
+        /* SUPPORTER                     */
+        /* ============================= */
+
+        #supporter-button {
+            display: none;
+            border: 2px solid #d6b85c;
+            background: #29230f;
+            color: #ffe69c;
+        }
+
+        #supporter-button:hover {
+            background: #403616;
+        }
+
+        #supporter-settings {
+            display: none;
+
+            border: 2px solid #d6b85c;
+            background: #18160d;
+
+            padding: 20px;
+            margin-bottom: 20px;
+
+            text-align: center;
+        }
+
+        #supporter-settings h2 {
+            color: #ffe69c;
+            margin-top: 0;
+        }
+
+        #supporter-settings p {
+            line-height: 1.5;
+        }
+
+        .supporter-status {
+            border: 1px solid #665a2d;
+            padding: 10px;
+            margin: 10px 0;
+        }
+
+        #supporter-tag-status,
+        #supporter-bonus-status,
+        #supporter-upgrade-status {
+            margin: 6px;
+        }
+
+        .supporter-note {
+            color: #aaa;
+            font-size: 13px;
+        }
+
 
         /* ============================= */
         /* LEADERBOARDS                  */
@@ -89,6 +154,7 @@
         .leaderboard-row {
             display: flex;
             justify-content: space-between;
+            gap: 10px;
             padding: 3px 0;
         }
 
@@ -97,6 +163,7 @@
             text-align: center;
             margin-top: 30px;
         }
+
 
         /* ============================= */
         /* LOGIN                         */
@@ -134,6 +201,7 @@
             color: #77ff77;
         }
 
+
         /* ============================= */
         /* GAME                          */
         /* ============================= */
@@ -153,7 +221,8 @@
             cursor: pointer;
         }
 
-        input, select {
+        input,
+        select {
             font-family: monospace;
             font-size: 18px;
             padding: 10px;
@@ -163,6 +232,7 @@
             margin-top: 20px;
             text-align: center;
         }
+
 
         /* ============================= */
         /* DEV BUTTON                    */
@@ -187,6 +257,7 @@
             color: #ffffff;
             border-color: #888;
         }
+
 
         /* ============================= */
         /* DEV LOGIN                     */
@@ -217,6 +288,7 @@
             padding: 8px;
             margin: 3px;
         }
+
 
         /* ============================= */
         /* DEV PANEL                     */
@@ -280,11 +352,13 @@
             margin-top: 8px;
         }
 
+
         /* ============================= */
         /* MOBILE                        */
         /* ============================= */
 
         @media (max-width: 600px) {
+
             #leaderboards {
                 grid-template-columns: 1fr;
             }
@@ -293,38 +367,63 @@
                 margin-top: 50px;
                 padding: 10px;
             }
+
+            #account-status {
+                display: block;
+                margin-bottom: 8px;
+            }
+
+            #supporter-settings button {
+                display: block;
+                width: 90%;
+                margin: 8px auto;
+            }
         }
+
     </style>
 </head>
 
+
 <body>
+
 
 <!-- ============================= -->
 <!-- DEV MODE                      -->
 <!-- ============================= -->
 
-<button id="dev-button" py-click="open_dev_login">
+<button
+    id="dev-button"
+    py-click="open_dev_login"
+>
     DEV
 </button>
 
+
 <div id="dev-login">
 
-    <strong>Developer Access</strong>
+    <strong>
+        Developer Access
+    </strong>
 
     <br><br>
 
     <input
         id="dev-password"
         type="password"
-        placeholder="Password">
+        placeholder="Password"
+    >
 
     <div style="text-align:center;">
 
-        <button py-click="check_dev_password">
+        <button
+            py-click="check_dev_password"
+        >
             LOGIN
         </button>
 
-        <button py-click="close_dev_login">
+        <button
+            py-click="close_dev_login"
+        >
             CANCEL
         </button>
 
@@ -337,64 +436,144 @@
 
 <div id="dev-panel">
 
-    <h2>DEV MODE</h2>
+    <h2>
+        DEV MODE
+    </h2>
 
     <div class="dev-warning">
+
         DEV MODE DISABLES LEADERBOARD
         SUBMISSIONS FOR THIS RUN.
+
     </div>
 
-    <div class="dev-row">
-        <label>Health</label>
-        <input id="dev-health" type="number">
-    </div>
 
     <div class="dev-row">
-        <label>Max Health</label>
-        <input id="dev-max-health" type="number">
+
+        <label>
+            Health
+        </label>
+
+        <input
+            id="dev-health"
+            type="number"
+        >
+
     </div>
 
-    <div class="dev-row">
-        <label>Mana</label>
-        <input id="dev-mana" type="number">
-    </div>
 
     <div class="dev-row">
-        <label>Max Mana</label>
-        <input id="dev-max-mana" type="number">
+
+        <label>
+            Max Health
+        </label>
+
+        <input
+            id="dev-max-health"
+            type="number"
+        >
+
     </div>
 
-    <div class="dev-row">
-        <label>Max Damage</label>
-        <input id="dev-damage" type="number">
-    </div>
 
     <div class="dev-row">
-        <label>Mana Regen</label>
-        <input id="dev-regen" type="number">
+
+        <label>
+            Mana
+        </label>
+
+        <input
+            id="dev-mana"
+            type="number"
+        >
+
     </div>
 
-    <div class="dev-row">
-        <label>Heal Rate</label>
-        <input id="dev-heal" type="number">
-    </div>
 
     <div class="dev-row">
-        <label>Enemy</label>
+
+        <label>
+            Max Mana
+        </label>
+
+        <input
+            id="dev-max-mana"
+            type="number"
+        >
+
+    </div>
+
+
+    <div class="dev-row">
+
+        <label>
+            Max Damage
+        </label>
+
+        <input
+            id="dev-damage"
+            type="number"
+        >
+
+    </div>
+
+
+    <div class="dev-row">
+
+        <label>
+            Mana Regen
+        </label>
+
+        <input
+            id="dev-regen"
+            type="number"
+        >
+
+    </div>
+
+
+    <div class="dev-row">
+
+        <label>
+            Heal Rate
+        </label>
+
+        <input
+            id="dev-heal"
+            type="number"
+        >
+
+    </div>
+
+
+    <div class="dev-row">
+
+        <label>
+            Enemy
+        </label>
+
         <select id="dev-enemy"></select>
+
     </div>
+
 
     <div style="text-align:center;">
 
-        <button py-click="apply_dev_changes">
+        <button
+            py-click="apply_dev_changes"
+        >
             APPLY
         </button>
 
-        <button py-click="dev_load_enemy">
+        <button
+            py-click="dev_load_enemy"
+        >
             LOAD ENEMY
         </button>
 
-        <button py-click="close_dev_panel">
+        <button
+            py-click="close_dev_panel"
+        >
             CLOSE
         </button>
 
@@ -407,15 +586,22 @@
 <!-- MAIN PAGE                     -->
 <!-- ============================= -->
 
-<h1>Roguelike by A.R.</h1>
+<h1>
+    Roguelike by A.R.
+</h1>
 
 
 <div id="site-notice">
 
-    <strong>NOTICE:</strong><br>
+    <strong>
+        NOTICE:
+    </strong>
 
-    This website is an independent project and is not affiliated with,
-    endorsed by, or an official website of Lakeland.
+    <br>
+
+    This website is an independent project and is not
+    affiliated with, endorsed by, or an official website
+    of Lakeland.
 
 </div>
 
@@ -424,9 +610,19 @@
 <!-- ACCOUNT                       -->
 <!-- ============================= -->
 
-<div id="account-bar" style="display:none;">
+<div
+    id="account-bar"
+    style="display:none;"
+>
 
     <span id="account-status"></span>
+
+    <button
+        id="supporter-button"
+        py-click="open_supporter_settings"
+    >
+        SUPPORTER SETTINGS
+    </button>
 
     <button py-click="logout">
         LOG OUT
@@ -435,23 +631,98 @@
 </div>
 
 
+<!-- ============================= -->
+<!-- SUPPORTER SETTINGS            -->
+<!-- ============================= -->
+
+<div id="supporter-settings">
+
+    <h2>
+        ★ SUPPORTER SETTINGS ★
+    </h2>
+
+    <p>
+        Thank you for supporting the game.
+    </p>
+
+    <div class="supporter-status">
+
+        <div id="supporter-tag-status">
+            Supporter Tag: OFF
+        </div>
+
+        <div id="supporter-bonus-status">
+            Supporter Bonus: OFF
+        </div>
+
+        <div id="supporter-upgrade-status">
+            Upgrade Power: NORMAL
+        </div>
+
+    </div>
+
+
+    <button
+        py-click="toggle_supporter_tag"
+    >
+        TOGGLE SUPPORTER TAG
+    </button>
+
+
+    <button
+        py-click="toggle_supporter_bonus"
+    >
+        TOGGLE SUPPORTER BONUS
+    </button>
+
+
+    <button
+        py-click="close_supporter_settings"
+    >
+        CLOSE
+    </button>
+
+
+    <p class="supporter-note">
+
+        Supporter Tag controls whether the ★ supporter
+        badge is displayed.
+
+        <br><br>
+
+        Supporter Bonus increases upgrade power to 40%.
+
+        <br><br>
+
+        The bonus can be disabled if you want to play
+        with normal balancing.
+
+    </p>
+
+</div>
+
+
 <div id="login-area">
 
-    <h2>ACCOUNT LOGIN</h2>
+    <h2>
+        ACCOUNT LOGIN
+    </h2>
 
     <input
         id="account-username"
         type="text"
         maxlength="20"
         autocomplete="username"
-        placeholder="Username">
+        placeholder="Username"
+    >
 
     <input
         id="account-password"
         type="password"
         maxlength="128"
         autocomplete="current-password"
-        placeholder="Password">
+        placeholder="Password"
+    >
 
     <button py-click="login">
         LOGIN
@@ -472,9 +743,12 @@
 
 <div id="leaderboards">
 
+
     <div class="leaderboard">
 
-        <h2>MOST WINS</h2>
+        <h2>
+            MOST WINS
+        </h2>
 
         <div id="wins-leaderboard">
             Loading...
@@ -485,13 +759,16 @@
 
     <div class="leaderboard">
 
-        <h2>FURTHEST RUN</h2>
+        <h2>
+            FURTHEST RUN
+        </h2>
 
         <div id="furthest-leaderboard">
             Loading...
         </div>
 
     </div>
+
 
 </div>
 
@@ -507,7 +784,11 @@ Loading Python...
 <div id="controls"></div>
 
 
-<script type="py" src="./game.py"></script>
+<script
+    type="py"
+    src="./game.py"
+></script>
+
 
 </body>
 </html>
