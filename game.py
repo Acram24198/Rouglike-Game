@@ -1,3 +1,4 @@
+```python
 from random import randint
 from pyscript import document
 from pyscript.ffi import to_js
@@ -43,10 +44,10 @@ max_mana = 50
 mana = max_mana
 mana_regen = 3
 
-min_damage = 1
+min_damage = 5
 max_damage = 15
 
-min_heal = 1
+min_heal = 5
 heal_rate = 20
 
 
@@ -531,7 +532,6 @@ Log in or create an account to play.
     controls("")
 
 
-
 # ==========================================
 # IN-GAME ADMIN
 # ==========================================
@@ -647,12 +647,9 @@ async def load_admin_users(event=None):
 
 
 def admin_event_element(event):
-    """Return the actual admin button that was clicked."""
     if event is None:
         return None
 
-    # With dynamically-created PyScript buttons, currentTarget can be
-    # JavaScript null. event.target is the reliable value here.
     try:
         target = event.target
         if target:
@@ -1427,9 +1424,12 @@ def apply_dev_changes(event=None):
     )
 
     max_damage = max(
-        min_damage,
+        5,
         max_damage
     )
+
+    # Damage window always stays 10 wide.
+    min_damage = max_damage - 10
 
     mana_regen = max(
         0,
@@ -1437,9 +1437,12 @@ def apply_dev_changes(event=None):
     )
 
     heal_rate = max(
-        min_heal,
+        5,
         heal_rate
     )
+
+    # Healing window always stays 15 wide.
+    min_heal = heal_rate - 15
 
     health = max(
         0,
@@ -1603,10 +1606,10 @@ def reset_run():
     mana = max_mana
     mana_regen = 3
 
-    min_damage = 1
+    min_damage = 5
     max_damage = 15
 
-    min_heal = 1
+    min_heal = 5
     heal_rate = 20
 
     enemy_number = 0
@@ -1934,14 +1937,6 @@ def show_upgrade(message=""):
         )
     )
 
-    new_min_damage = max(
-        min_damage + 1,
-        round(
-            min_damage *
-            damage_multiplier
-        )
-    )
-
     new_max_damage = max(
         max_damage + 1,
         round(
@@ -1950,13 +1945,9 @@ def show_upgrade(message=""):
         )
     )
 
-    new_min_heal = max(
-        min_heal + 1,
-        round(
-            min_heal *
-            heal_multiplier
-        )
-    )
+    # Minimum follows maximum so the
+    # damage roll window always stays 10.
+    new_min_damage = new_max_damage - 10
 
     new_max_heal = max(
         heal_rate + 1,
@@ -1965,6 +1956,10 @@ def show_upgrade(message=""):
             heal_multiplier
         )
     )
+
+    # Minimum follows maximum so the
+    # healing roll window always stays 15.
+    new_min_heal = new_max_heal - 15
 
     new_regen = max(
         mana_regen + 1,
@@ -2068,14 +2063,6 @@ def upgrade_damage(event=None):
         damage_upgrade_multiplier()
     )
 
-    min_damage = max(
-        min_damage + 1,
-        round(
-            min_damage *
-            multiplier
-        )
-    )
-
     max_damage = max(
         max_damage + 1,
         round(
@@ -2083,6 +2070,9 @@ def upgrade_damage(event=None):
             multiplier
         )
     )
+
+    # Keep the damage range exactly 10 wide.
+    min_damage = max_damage - 10
 
     mana = max_mana
 
@@ -2103,14 +2093,6 @@ def upgrade_heal(event=None):
         heal_upgrade_multiplier()
     )
 
-    min_heal = max(
-        min_heal + 1,
-        round(
-            min_heal *
-            multiplier
-        )
-    )
-
     heal_rate = max(
         heal_rate + 1,
         round(
@@ -2118,6 +2100,9 @@ def upgrade_heal(event=None):
             multiplier
         )
     )
+
+    # Keep the healing range exactly 15 wide.
+    min_heal = heal_rate - 15
 
     mana = max_mana
 
@@ -2343,3 +2328,4 @@ def restart_game(event=None):
 asyncio.create_task(
     restore_session()
 )
+```
