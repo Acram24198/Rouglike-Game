@@ -646,13 +646,62 @@ async def load_admin_users(event=None):
     admin_message(f"Loaded {len(data.users)} accounts.")
 
 
-def admin_event_user_id(event):
+def admin_event_element(event):
+    """Return the actual admin button that was clicked."""
+    if event is None:
+        return None
+
+    # With dynamically-created PyScript buttons, currentTarget can be
+    # JavaScript null. event.target is the reliable value here.
     try:
-        return int(
-            event.currentTarget.getAttribute("data-user-id")
-        )
+        target = event.target
+        if target:
+            return target
+    except:
+        pass
+
+    try:
+        target = event.currentTarget
+        if target:
+            return target
+    except:
+        pass
+
+    return None
+
+
+def admin_event_user_id(event):
+    button = admin_event_element(event)
+
+    if button is None:
+        return None
+
+    try:
+        value = button.getAttribute("data-user-id")
+
+        if value is None:
+            return None
+
+        return int(str(value))
     except:
         return None
+
+
+def admin_event_username(event):
+    button = admin_event_element(event)
+
+    if button is None:
+        return ""
+
+    try:
+        value = button.getAttribute("data-username")
+
+        if value is None:
+            return ""
+
+        return str(value)
+    except:
+        return ""
 
 
 async def set_supporter_status(user_id, enabled):
@@ -716,11 +765,10 @@ async def delete_account(event=None):
         admin_message("Invalid user ID.", True)
         return
 
-    username = str(
-        event.currentTarget.getAttribute(
-            "data-username"
-        )
-    )
+    username = admin_event_username(event)
+
+    if not username:
+        username = f"User #{user_id}"
 
     approved = confirm(
         f'Delete account "{username}" permanently?\\n\\n'
