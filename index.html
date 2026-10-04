@@ -194,6 +194,23 @@
             margin: 2px;
         }
 
+        #admin-table .admin-delete {
+            border: 2px solid #ff5555;
+            background: #3a1010;
+            color: #ffaaaa;
+        }
+
+        #admin-table .admin-delete:hover {
+            background: #5a1515;
+        }
+
+        .admin-protected {
+            display: inline-block;
+            color: #ffcc77;
+            font-size: 12px;
+            margin-left: 6px;
+        }
+
         .admin-actions {
             text-align: center;
             margin-top: 15px;
@@ -754,7 +771,7 @@
     </h2>
 
     <p>
-        Grant or remove supporter access for game accounts.
+        Manage supporter access or permanently delete game accounts.
     </p>
 
     <div id="admin-message"></div>
@@ -969,12 +986,12 @@ Loading Python...
 
 <script
     type="py"
-    src="./game.py?v=1.2.0"
+    src="./game.py?v=1.3.0"
 ></script>
 
 
 <div id="version-display">
-    v1.2.0
+    v1.3.0
 </div>
 
 
