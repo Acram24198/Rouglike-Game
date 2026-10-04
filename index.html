@@ -354,6 +354,31 @@
 
 
         /* ============================= */
+        /* VERSION DISPLAY               */
+        /* ============================= */
+
+        #version-display {
+            position: fixed;
+            bottom: 8px;
+            left: 8px;
+            z-index: 1000;
+
+            font-family: monospace;
+            font-size: 12px;
+
+            color: #777;
+            background: #111;
+
+            border: 1px solid #333;
+            border-radius: 4px;
+
+            padding: 4px 7px;
+
+            user-select: none;
+        }
+
+
+        /* ============================= */
         /* MOBILE                        */
         /* ============================= */
 
@@ -702,6 +727,10 @@
 </div>
 
 
+<!-- ============================= -->
+<!-- LOGIN                         -->
+<!-- ============================= -->
+
 <div id="login-area">
 
     <h2>
@@ -784,10 +813,23 @@ Loading Python...
 <div id="controls"></div>
 
 
+<!--
+    VERSION NUMBER IS ALSO INCLUDED
+    IN THE GAME.PY URL.
+
+    CHANGE BOTH WHEN DEPLOYING A
+    NEW VERSION.
+-->
+
 <script
     type="py"
-    src="./game.py"
+    src="./game.py?v=1.1.1"
 ></script>
+
+
+<div id="version-display">
+    v1.1.1
+</div>
 
 
 </body>
