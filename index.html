@@ -127,6 +127,80 @@
 
 
         /* ============================= */
+        /* ADMIN                         */
+        /* ============================= */
+
+        #admin-button {
+            display: none;
+            border: 2px solid #ff7777;
+            background: #2b1111;
+            color: #ffaaaa;
+        }
+
+        #admin-button:hover {
+            background: #451919;
+        }
+
+        #admin-panel {
+            display: none;
+            border: 2px solid #ff5555;
+            background: #151010;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        #admin-panel h2 {
+            color: #ff7777;
+            text-align: center;
+            margin-top: 0;
+        }
+
+        #admin-panel p {
+            text-align: center;
+            color: #aaa;
+        }
+
+        #admin-message {
+            min-height: 20px;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        #admin-table-wrap {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        #admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 650px;
+        }
+
+        #admin-table th,
+        #admin-table td {
+            border-bottom: 1px solid #444;
+            padding: 8px;
+            text-align: left;
+        }
+
+        #admin-table th {
+            color: #ffaaaa;
+        }
+
+        #admin-table button {
+            font-size: 13px;
+            padding: 6px 9px;
+            margin: 2px;
+        }
+
+        .admin-actions {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+
+        /* ============================= */
         /* LEADERBOARDS                  */
         /* ============================= */
 
@@ -403,6 +477,12 @@
                 width: 90%;
                 margin: 8px auto;
             }
+
+            #admin-panel .admin-actions button {
+                display: block;
+                width: 90%;
+                margin: 8px auto;
+            }
         }
 
     </style>
@@ -643,6 +723,13 @@
     <span id="account-status"></span>
 
     <button
+        id="admin-button"
+        py-click="open_admin_panel"
+    >
+        ADMIN
+    </button>
+
+    <button
         id="supporter-button"
         py-click="open_supporter_settings"
     >
@@ -652,6 +739,65 @@
     <button py-click="logout">
         LOG OUT
     </button>
+
+</div>
+
+
+<!-- ============================= -->
+<!-- ADMIN PANEL                   -->
+<!-- ============================= -->
+
+<div id="admin-panel">
+
+    <h2>
+        ADMIN CONTROLS
+    </h2>
+
+    <p>
+        Grant or remove supporter access for game accounts.
+    </p>
+
+    <div id="admin-message"></div>
+
+    <div id="admin-table-wrap">
+
+        <table id="admin-table">
+
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Wins</th>
+                    <th>Furthest</th>
+                    <th>Supporter</th>
+                    <th>Tag</th>
+                    <th>Bonus</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody id="admin-users">
+                <tr>
+                    <td colspan="7">
+                        Loading...
+                    </td>
+                </tr>
+            </tbody>
+
+        </table>
+
+    </div>
+
+    <div class="admin-actions">
+
+        <button py-click="load_admin_users">
+            REFRESH
+        </button>
+
+        <button py-click="close_admin_panel">
+            CLOSE
+        </button>
+
+    </div>
 
 </div>
 
@@ -823,12 +969,12 @@ Loading Python...
 
 <script
     type="py"
-    src="./game.py?v=1.1.1"
+    src="./game.py?v=1.2.0"
 ></script>
 
 
 <div id="version-display">
-    v1.1.1
+    v1.2.0
 </div>
 
 
