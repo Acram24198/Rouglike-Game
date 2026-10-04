@@ -1,7 +1,7 @@
 from random import randint
 from pyscript import document
 from pyscript.ffi import to_js
-from js import fetch, localStorage, JSON
+from js import fetch, localStorage, JSON, confirm
 import asyncio
 
 
@@ -603,14 +603,28 @@ async def load_admin_users(event=None):
         bonus_text = "ON" if bool(user.supporter_bonus) else "OFF"
 
         if bool(user.supporter):
-            action = (
+            supporter_action = (
                 f'<button py-click="remove_supporter" '
-                f'data-user-id="{user_id}">REMOVE</button>'
+                f'data-user-id="{user_id}">REMOVE SUPPORTER</button>'
+            )
+        else:
+            supporter_action = (
+                f'<button py-click="grant_supporter" '
+                f'data-user-id="{user_id}">GRANT SUPPORTER</button>'
+            )
+
+        if bool(getattr(user, "is_admin", False)):
+            action = (
+                supporter_action +
+                '<span class="admin-protected"> ADMIN ACCOUNT</span>'
             )
         else:
             action = (
-                f'<button py-click="grant_supporter" '
-                f'data-user-id="{user_id}">GRANT</button>'
+                supporter_action +
+                f'<button class="admin-delete" '
+                f'py-click="delete_account" '
+                f'data-user-id="{user_id}" '
+                f'data-username="{safe_username}">DELETE</button>'
             )
 
         rows += (
@@ -690,6 +704,65 @@ async def remove_supporter(event=None):
         admin_event_user_id(event),
         False
     )
+
+
+async def delete_account(event=None):
+    if not is_admin or event is None:
+        return
+
+    user_id = admin_event_user_id(event)
+
+    if user_id is None:
+        admin_message("Invalid user ID.", True)
+        return
+
+    username = str(
+        event.currentTarget.getAttribute(
+            "data-username"
+        )
+    )
+
+    approved = confirm(
+        f'Delete account "{username}" permanently?\\n\\n'
+        "This removes the account, leaderboard stats, supporter status, "
+        "and active login sessions. This cannot be undone."
+    )
+
+    if not approved:
+        return
+
+    admin_message(
+        f'Deleting "{username}"...'
+    )
+
+    status, data = await api_request(
+        "/admin/delete-user",
+        "POST",
+        {
+            "user_id": user_id
+        },
+        use_auth=True
+    )
+
+    if status != 200 or data is None:
+        message = "Could not delete account."
+
+        if data is not None:
+            message = getattr(
+                data,
+                "error",
+                message
+            )
+
+        admin_message(message, True)
+        return
+
+    admin_message(
+        f'Account "{username}" deleted.'
+    )
+
+    await load_admin_users()
+    await load_leaderboards()
 
 
 # ==========================================
